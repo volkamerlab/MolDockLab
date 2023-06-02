@@ -1,3 +1,5 @@
 # ECFT-VS-pipeline
 
-Energy coupling factor transporter transmembrane protein (ECF-T) is a novel, promising antimicrobial target. Inhibiting its activity reduces the viability of pathogens. However, Absence of crystallized protein with ligand and its cryptic binding pocket make it a challenging target.
+Energy coupling factor transporter transmembrane protein (ECF-T) is an antimicrobial target.
+
+In our pipeline we'll perform structure-based virtual screening using traditional docking and blind docking for an in-house data of HIPS to find novel inhibitors.

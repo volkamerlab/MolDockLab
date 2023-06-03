@@ -72,7 +72,7 @@ M  END
 3.1390740871
 
 >  <MorganFP>  (1) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72be732e0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98c5f890>
 
 $$$$
 HIPS407
@@ -155,7 +155,7 @@ M  END
 2.3354883194
 
 >  <MorganFP>  (2) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72be734a0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98c5fb30>
 
 $$$$
 HIPS408
@@ -237,7 +237,7 @@ M  END
 3.7998633385
 
 >  <MorganFP>  (3) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72be73580>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98c5fba0>
 
 $$$$
 HIPS408
@@ -319,7 +319,7 @@ M  END
 3.7122566700
 
 >  <MorganFP>  (4) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72be73660>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98c5fc10>
 
 $$$$
 HIPS435
@@ -401,7 +401,7 @@ M  END
 3.6644539833
 
 >  <MorganFP>  (5) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c603200>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98c81660>
 
 $$$$
 HIPS435
@@ -483,7 +483,7 @@ M  END
 2.6066246033
 
 >  <MorganFP>  (6) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c603190>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98c816d0>
 
 $$$$
 HIPS435
@@ -565,7 +565,7 @@ M  END
 2.6668581963
 
 >  <MorganFP>  (7) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c603ba0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98c81740>
 
 $$$$
 HIPS495
@@ -642,7 +642,7 @@ M  END
 4.0146045685
 
 >  <MorganFP>  (8) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c4e92e0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e28660>
 
 $$$$
 HIPS495
@@ -719,7 +719,7 @@ M  END
 3.4758229256
 
 >  <MorganFP>  (9) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c4e9190>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e286d0>
 
 $$$$
 HIPS495
@@ -796,7 +796,7 @@ M  END
 3.2993030548
 
 >  <MorganFP>  (10) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c4e9ba0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e28740>
 
 $$$$
 HIPS5024
@@ -872,7 +872,7 @@ M  END
 4.3123979568
 
 >  <MorganFP>  (11) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c4e9350>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e28ba0>
 
 $$$$
 HIPS5024
@@ -948,7 +948,7 @@ M  END
 3.9256677628
 
 >  <MorganFP>  (12) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c4e9dd0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e28c10>
 
 $$$$
 HIPS5029
@@ -1032,7 +1032,7 @@ M  END
 3.3210990429
 
 >  <MorganFP>  (13) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bc49890>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e38270>
 
 $$$$
 HIPS5029
@@ -1116,7 +1116,7 @@ M  END
 2.8804116249
 
 >  <MorganFP>  (14) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bc49040>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e382e0>
 
 $$$$
 HIPS5029
@@ -1200,7 +1200,7 @@ M  END
 2.5668244362
 
 >  <MorganFP>  (15) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bc49ac0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e38350>
 
 $$$$
 HIPS5238
@@ -1284,7 +1284,7 @@ M  END
 4.6950201988
 
 >  <MorganFP>  (16) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bcb4f90>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e24120>
 
 $$$$
 HIPS5238
@@ -1368,7 +1368,7 @@ M  END
 3.2455952168
 
 >  <MorganFP>  (17) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bcb4970>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e24190>
 
 $$$$
 HIPS5238
@@ -1452,7 +1452,7 @@ M  END
 3.1087174416
 
 >  <MorganFP>  (18) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bcb4120>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e24200>
 
 $$$$
 HIPS5239
@@ -1524,7 +1524,7 @@ M  END
 4.4709091187
 
 >  <MorganFP>  (19) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bcb4c10>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e24270>
 
 $$$$
 HIPS5239
@@ -1596,7 +1596,7 @@ M  END
 3.7045807838
 
 >  <MorganFP>  (20) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bcb4dd0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e242e0>
 
 $$$$
 HIPS5239
@@ -1668,7 +1668,7 @@ M  END
 3.2971723080
 
 >  <MorganFP>  (21) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bcb4900>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e24350>
 
 $$$$
 HIPS5844
@@ -1739,7 +1739,7 @@ M  END
 5.3416347504
 
 >  <MorganFP>  (22) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bcb4660>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e24900>
 
 $$$$
 HIPS5844
@@ -1810,7 +1810,7 @@ M  END
 4.5710754395
 
 >  <MorganFP>  (23) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bcb49e0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e24970>
 
 $$$$
 HIPS5844
@@ -1881,7 +1881,7 @@ M  END
 4.1804728508
 
 >  <MorganFP>  (24) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bcb4ba0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e249e0>
 
 $$$$
 HIPS5963
@@ -1941,7 +1941,7 @@ M  END
 4.4909505844
 
 >  <MorganFP>  (25) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c098ac0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98e24f90>
 
 $$$$
 HIPS5963
@@ -2001,7 +2001,7 @@ M  END
 3.8362808228
 
 >  <MorganFP>  (26) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c098eb0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99487040>
 
 $$$$
 HIPS5963
@@ -2061,7 +2061,7 @@ M  END
 3.9746305943
 
 >  <MorganFP>  (27) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c098660>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d994870b0>
 
 $$$$
 HIPS6066
@@ -2152,7 +2152,7 @@ M  END
 4.4515676498
 
 >  <MorganFP>  (28) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c098900>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99487cf0>
 
 $$$$
 HIPS6066
@@ -2243,7 +2243,7 @@ M  END
 3.6554534435
 
 >  <MorganFP>  (29) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bf78a50>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99487d60>
 
 $$$$
 HIPS6066
@@ -2334,7 +2334,7 @@ M  END
 3.4418129921
 
 >  <MorganFP>  (30) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bf78660>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99487dd0>
 
 $$$$
 HIPS6134
@@ -2427,7 +2427,7 @@ M  END
 4.4560332298
 
 >  <MorganFP>  (31) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bf784a0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d9948f890>
 
 $$$$
 HIPS6569
@@ -2488,7 +2488,7 @@ M  END
 4.1017470360
 
 >  <MorganFP>  (32) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd23970>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99453740>
 
 $$$$
 HIPS6701
@@ -2574,7 +2574,7 @@ M  END
 3.6906924248
 
 >  <MorganFP>  (33) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd23350>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d994537b0>
 
 $$$$
 HIPS6701
@@ -2660,7 +2660,7 @@ M  END
 3.2645778656
 
 >  <MorganFP>  (34) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd237b0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99453820>
 
 $$$$
 HIPS6707
@@ -2736,7 +2736,7 @@ M  END
 3.4532516003
 
 >  <MorganFP>  (35) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd23580>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99453ba0>
 
 $$$$
 HIPS6707
@@ -2812,7 +2812,7 @@ M  END
 3.4428515434
 
 >  <MorganFP>  (36) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd232e0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99453c10>
 
 $$$$
 HIPS6707
@@ -2888,7 +2888,7 @@ M  END
 3.2209959030
 
 >  <MorganFP>  (37) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd23510>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99453c80>
 
 $$$$
 HIPS6708
@@ -2951,7 +2951,7 @@ M  END
 3.2928667068
 
 >  <MorganFP>  (38) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd239e0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99453cf0>
 
 $$$$
 HIPS6708
@@ -3014,7 +3014,7 @@ M  END
 3.1272449493
 
 >  <MorganFP>  (39) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd234a0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99453d60>
 
 $$$$
 HIPS6785
@@ -3078,7 +3078,7 @@ M  END
 3.2880275249
 
 >  <MorganFP>  (40) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd23740>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99453e40>
 
 $$$$
 HIPS6785
@@ -3142,7 +3142,7 @@ M  END
 2.9835290909
 
 >  <MorganFP>  (41) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd23040>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99453eb0>
 
 $$$$
 HIPS6785
@@ -3206,7 +3206,7 @@ M  END
 2.6785995960
 
 >  <MorganFP>  (42) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd23a50>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99453f20>
 
 $$$$
 HIPS6789
@@ -3269,7 +3269,7 @@ M  END
 3.2767667770
 
 >  <MorganFP>  (43) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd23cf0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d994510b0>
 
 $$$$
 HIPS6790
@@ -3339,7 +3339,7 @@ M  END
 4.4332265854
 
 >  <MorganFP>  (44) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd23f20>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99451120>
 
 $$$$
 HIPS6790
@@ -3409,7 +3409,7 @@ M  END
 3.9522643089
 
 >  <MorganFP>  (45) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd23d60>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99451190>
 
 $$$$
 HIPS6790
@@ -3479,7 +3479,7 @@ M  END
 3.6624081135
 
 >  <MorganFP>  (46) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd23900>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99451200>
 
 $$$$
 HIPS6794
@@ -3551,7 +3551,7 @@ M  END
 4.7934861183
 
 >  <MorganFP>  (47) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd23c10>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99451270>
 
 $$$$
 HIPS6794
@@ -3623,7 +3623,7 @@ M  END
 4.7154479027
 
 >  <MorganFP>  (48) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72bd23190>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d994512e0>
 
 $$$$
 HIPS6862
@@ -3697,7 +3697,7 @@ M  END
 3.3759055138
 
 >  <MorganFP>  (49) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c60ccf0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d994519e0>
 
 $$$$
 HIPS6863
@@ -3767,7 +3767,7 @@ M  END
 4.9328126907
 
 >  <MorganFP>  (50) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c60c0b0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99451a50>
 
 $$$$
 HIPS6863
@@ -3837,7 +3837,7 @@ M  END
 4.0101737976
 
 >  <MorganFP>  (51) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c60c3c0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99451b30>
 
 $$$$
 HIPS6897
@@ -3916,7 +3916,7 @@ M  END
 1.9358744621
 
 >  <MorganFP>  (52) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c60cc10>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99451ba0>
 
 $$$$
 HIPS6897
@@ -3995,7 +3995,7 @@ M  END
 1.7029784918
 
 >  <MorganFP>  (53) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c60cc80>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99451c10>
 
 $$$$
 HIPS6897
@@ -4074,7 +4074,7 @@ M  END
 1.4260892868
 
 >  <MorganFP>  (54) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c60ce40>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99451c80>
 
 $$$$
 HIPS6933
@@ -4170,7 +4170,7 @@ M  END
 3.6877186298
 
 >  <MorganFP>  (55) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c60c270>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99451d60>
 
 $$$$
 HIPS6968
@@ -4242,7 +4242,7 @@ M  END
 3.9417078495
 
 >  <MorganFP>  (56) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c60cd60>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99451e40>
 
 $$$$
 HIPS6968
@@ -4314,7 +4314,7 @@ M  END
 3.5538835526
 
 >  <MorganFP>  (57) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c60c4a0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99451f20>
 
 $$$$
 HIPS6969
@@ -4390,7 +4390,7 @@ M  END
 4.9235758781
 
 >  <MorganFP>  (58) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c60c200>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d99451f90>
 
 $$$$
 HIPS6969
@@ -4466,7 +4466,7 @@ M  END
 4.2645578384
 
 >  <MorganFP>  (59) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c60c6d0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98d960b0>
 
 $$$$
 HIPS6978
@@ -4561,7 +4561,7 @@ M  END
 2.9526226521
 
 >  <MorganFP>  (60) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c66f040>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98d96120>
 
 $$$$
 HIPS6978
@@ -4656,7 +4656,7 @@ M  END
 2.4703257084
 
 >  <MorganFP>  (61) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c66f0b0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98d96190>
 
 $$$$
 HIPS6978
@@ -4751,7 +4751,7 @@ M  END
 1.7874815464
 
 >  <MorganFP>  (62) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c66f120>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98d96200>
 
 $$$$
 HIPS6981
@@ -4842,7 +4842,7 @@ M  END
 4.1701025963
 
 >  <MorganFP>  (63) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c66f270>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98d96270>
 
 $$$$
 HIPS6981
@@ -4933,7 +4933,7 @@ M  END
 3.6186559200
 
 >  <MorganFP>  (64) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c66f2e0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98d962e0>
 
 $$$$
 HIPS6981
@@ -5024,6 +5024,6 @@ M  END
 3.2980749607
 
 >  <MorganFP>  (65) 
-<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7ff72c66f3c0>
+<rdkit.DataStructs.cDataStructs.ExplicitBitVect object at 0x7f9d98d96350>
 
 $$$$

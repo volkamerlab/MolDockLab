@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from rdkit import Chem
 import multiprocessing
-
+from rdkit import RDLogger
 def create_IC50_sample():
     if 'IC50_mol_only.sdf' not in os.listdir('data/ligands/'):
         print("Extracting IC50 molcules ...")
@@ -31,6 +31,7 @@ def create_IC50_sample():
 
 
 def add_negative_data(data_name):
+    RDLogger.DisableLog('rdApp.*')  
     train_df = pd.read_csv('data/ligands/scores_ecft.csv').sort_values("compound")
     alldata_df = PandasTools.LoadSDF('data/ligands/HIPS compounds 001-7433.sdf')
     train_df_struct = alldata_df[alldata_df['HIPS code'].isin(train_df['compound'])].sort_values("HIPS code")

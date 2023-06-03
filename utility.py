@@ -5,7 +5,7 @@ import pandas as pd
 from rdkit import Chem
 from scipy.stats import spearmanr
 from matplotlib import pyplot as plt
-
+from rdkit import RDLogger
 def prepare_diffdock_input(protein_path, ligand_path, output_path):
 
 #Every line has path to same target and different smiles code.
@@ -36,8 +36,9 @@ def rank_correlation(results_path):
     @Return:
     Draw a plot that has both correlations
     '''''
-    
-    docked_df = PandasTools.LoadSDF(results_path, idName='ID', molColName='Molecule', strictParsing=False)
+    RDLogger.DisableLog('rdApp.*')  
+    # with open(subprocess.DEVNULL, 'w') as devnull:
+    docked_df = PandasTools.LoadSDF(results_path, idName='ID', molColName='Molecule', strictParsing=False)    
     docked_method = results_path.split('_')[1]
     scoring_method = results_path.split('_')[2]
 
@@ -76,7 +77,7 @@ def rank_correlation(results_path):
 
     # correlation_matrix = docked_df[['true rank', 'docked rank']].corr(method='pearson')
     # print(correlation_matrix)
-    print(pearson_corr)
+    #print(pearson_corr)
 
     plt.scatter(docked_df['true rank'], docked_df['docked rank'])
     plt.xlabel('True rank')

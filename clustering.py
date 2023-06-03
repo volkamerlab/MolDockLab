@@ -4,6 +4,10 @@ import pandas as pd
 from rdkit import DataStructs
 from rdkit.ML.Cluster import Butina
 import numpy as np
+from rdkit import RDLogger
+
+RDLogger.DisableLog('rdApp.*')  
+
 
 # Reduce dimensionality step
 def morgan_fp_generator(mol):

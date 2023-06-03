@@ -30,5 +30,5 @@ def rescoring_functions(docking_methods, scoring_methods, snapshot_ID, data_size
             if scoring_method == "ad4":
                 rescoring_cmd =  f'./software/gnina -r {protein_path} -l {docked_library} --autobox_ligand {ref_path} -o {rescoring_results_path} --score_only --scoring ad4_scoring --cnn_scoring none --no_gpu'
             
-            os.system(rescoring_cmd)
+            os.system(rescoring_cmd + ' > /dev/null')
             rank_correlation(rescoring_results_path)

@@ -28,9 +28,11 @@ def prepare_diffdock_input(protein_path, ligand_path, output_path):
             writer.writerow(['', protein_path, smiles[i], ''])
 
     #print(f'input csv file for DiffDock is ready in {output_path}')
+def common_molecules(df_IC50, df_scores):
+    
+    common_molecules = df_scores[df_scores['HIPS code'].isin(df_IC50['HIPS code'])]['HIPS code']
 
-
-def rank_correlation(results_path):
+def rank_correlation(results_path, common_ID):
     '''''
     It's a function that evaluates smina and gnina docking tools. It calculates pearson's correlation and spearsman correlation.
     Dataframe has to be output from docking tool contains the true score of ranking and predicted score.
@@ -38,7 +40,7 @@ def rank_correlation(results_path):
     results_path : Path of SDF file which contains the true value column called "Activity"
     
     @Return:
-    Draw a plot that has both correlations
+    Draw a plot that has spearman and pearson correlation
     '''''
     RDLogger.DisableLog('rdApp.*')  
     # with open(subprocess.DEVNULL, 'w') as devnull:
@@ -83,26 +85,34 @@ def rank_correlation(results_path):
     # print(correlation_matrix)
     #print(pearson_corr)
 
-    plt.scatter(docked_df['true rank'], docked_df['docked rank'])
-    plt.xlabel('True rank')
-    plt.ylabel('Docked rank')
-    plt.title(f'{docked_method.upper()} {scoring_method.upper()}, snapshot A\n Pearson corr = {pearson_corr:.4f}\n Spearman corr = {spearman_corr:.4f}')
-    plt.show()
+    # Specify different colors for the differentiated points
+    score_of_commonIDs = docked_df.loc[docked_df['ID'].isin(common_ID), 'Activity'].to_list()
+    predicted_of_commonIDs = docked_df.loc[docked_df['ID'].isin(common_ID), predicted_score].to_list()
+
+
+
+    # plt.scatter(docked_df['true rank'], docked_df['docked rank'], label='All Points')
+    
+    # plt.xlabel('True rank')
+    # plt.ylabel('Docked rank')
+    # plt.title(f'{docked_method.upper()} {scoring_method.upper()}, snapshot A\n Pearson corr = {pearson_corr:.4f}\n Spearman corr = {spearman_corr:.4f}')
+    # plt.legend()
+    # plt.show()
 
     # Find Pearson and spearsman correlation between true and predicted values
     pearson_corr = docked_df['Activity'].corr(docked_df[predicted_score])
-    # correlation_matrix = docked_df[['Activity', predicted_score]].corr(method='pearson')
-    # print(correlation_matrix)
-    #print(pearson_corr)
-
     spearman_corr = spearmanr(docked_df['Activity'], docked_df[predicted_score])[0]
+    
+    plt.figure(figsize=(10,8))	
 
-    plt.scatter(docked_df['Activity'], docked_df[predicted_score])
+    plt.scatter(docked_df['Activity'], docked_df[predicted_score], c='blue', label='Calculated Scores')
+    plt.scatter(score_of_commonIDs, predicted_of_commonIDs, c='red', label='IC50')
+
     plt.xlabel('Score')
     plt.ylabel('Predicted Affinity')
     plt.title(f'{docked_method.upper()} {scoring_method.upper()}, snapshot A\n Pearson corr = {pearson_corr:.4f}\n Spearman corr = {spearman_corr:.4f}')
+    plt.legend()
     plt.show()
-
 
 def prepare_df_for_comparison(results_path, ligand_library):
 
@@ -154,21 +164,34 @@ def prcoess_ranking_data(df, true_df, method):
 
     return merged_df
 
-def correlation_mapping(df):
-        
+def correlation_mapping(df, common_ID):
+
         method_name = df.columns[1]
         print(method_name)
+
+        score_of_commonIDs = df.loc[df['ID'].isin(common_ID), 'score'].to_list()
+        predicted_of_commonIDs = df.loc[df['ID'].isin(common_ID), method_name].to_list()
         spearman_corr = spearmanr(df['score'], df[method_name])[0]
         pearson_corr = df['score'].corr(df[method_name])
-        plt.scatter(df['score'], df[method_name])
-        plt.xlabel('IC50')
+
+        plt.figure(figsize=(10,8))	
+
+        plt.scatter(df['score'], df[method_name], c='blue', label='Calculated Scores')
+        plt.scatter(score_of_commonIDs, predicted_of_commonIDs, c='red', label='IC50')
+        plt.xlabel('Scores')
         plt.ylabel('Predicted Affinity')
         plt.title(f'DockM8 {method_name}, snapshot A\n Pearson corr = {pearson_corr:.4f}\n Spearman corr = {spearman_corr:.4f}')
+        plt.legend()
         plt.show()
 
         
-def consensus_ranking_generator(cons_method):
+def consensus_ranking_generator(cons_method, common_ID):
+    '''''
+    This function takes the output from ranking step in DockM8 tool and assign ECR scores according to DockM8 tools.
+    @Param : cons_method --> Consensus method will be used accordingly
 
+    @Output is the calcuated correlation between true and claculated scores and scatter plot
+    '''''
     true_df = PandasTools.LoadSDF('data/ligands/ecft_scores.sdf', idName="ID")[['ID','HIPS code', 'score']]
     true_df['old rank'] = true_df['score'].apply(pd.to_numeric).rank(method='min')
     for f in os.listdir('data/A/dockm8/ranking/'):
@@ -190,5 +213,5 @@ def consensus_ranking_generator(cons_method):
 
         cons_df = prcoess_ranking_data(cons_df,true_df, cons_metric)
 
-        correlation_mapping(cons_df)
+        correlation_mapping(cons_df, common_ID)
 

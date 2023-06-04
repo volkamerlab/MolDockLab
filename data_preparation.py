@@ -57,6 +57,4 @@ def run_gypsumdl(ligand_library, output):
     else:
         print("Molecules are already prepared")
     
-
-    
     return f'data/ligands/{output}.sdf'

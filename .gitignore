@@ -5,6 +5,8 @@ __pycache__/
 
 software
 data
+consensus_methods.py
+DockM8/
 # C extensions
 *.so
 

@@ -1,3 +1,4 @@
+import os
 import csv
 from rdkit import Chem
 from rdkit.Chem import PandasTools
@@ -6,6 +7,9 @@ from rdkit import Chem
 from scipy.stats import spearmanr
 from matplotlib import pyplot as plt
 from rdkit import RDLogger
+from DockM8.scripts import consensus_methods
+
+
 def prepare_diffdock_input(protein_path, ligand_path, output_path):
 
 #Every line has path to same target and different smiles code.
@@ -94,7 +98,7 @@ def rank_correlation(results_path):
     spearman_corr = spearmanr(docked_df['Activity'], docked_df[predicted_score])[0]
 
     plt.scatter(docked_df['Activity'], docked_df[predicted_score])
-    plt.xlabel('IC50')
+    plt.xlabel('Score')
     plt.ylabel('Predicted Affinity')
     plt.title(f'{docked_method.upper()} {scoring_method.upper()}, snapshot A\n Pearson corr = {pearson_corr:.4f}\n Spearman corr = {spearman_corr:.4f}')
     plt.show()
@@ -122,3 +126,69 @@ def prepare_df_for_comparison(results_path, ligand_library):
     merged_df = pd.merge(docked_df, true_df, on='ID').drop('ID', axis=1)
     merged_df.rename(columns = {'score':'Activity', 'HIPS code':'ID'}, inplace = True)
     return merged_df
+
+
+def prcoess_ranking_data(df, true_df, method):
+    '''''
+    @Param : df = gnerated df from DockM8, true_df = the first input, method = the type of the metric used
+    ----------------
+    @Return : dataframe have the true score , HIPS codes and the consensus score 
+    '''''
+    df = df.sort_values(by=[method]).drop_duplicates(subset="ID")
+
+    #Add info to stardrop ID first
+    df_stardrop = df[df['ID'].str.startswith('StarDrop')].sort_values(by = "ID")
+    filtered_df = true_df[true_df['ID'].isin(df_stardrop['ID'])].sort_values(by = "ID")
+
+    df_stardrop['ID'] = filtered_df['HIPS code'].to_list()
+    df_stardrop['score'] = filtered_df['score'].to_list()
+
+    #Add info to HIPS ID second
+    df_HIPS = df[df['ID'].str.startswith('HIPS')].sort_values(by = "ID")
+    filtered_df2 = true_df[true_df['HIPS code'].isin(df_HIPS['ID'])].sort_values(by = "HIPS code")
+    df_HIPS['score'] = filtered_df2['score'].to_list()
+
+    #Merge both again
+    merged_df = pd.concat([df_HIPS, df_stardrop]).drop_duplicates('ID')
+    merged_df[[method, 'score']] = merged_df[[method, 'score']].apply(pd.to_numeric)
+
+    return merged_df
+
+def correlation_mapping(df):
+        
+        method_name = df.columns[1]
+        print(method_name)
+        spearman_corr = spearmanr(df['score'], df[method_name])[0]
+        pearson_corr = df['score'].corr(df[method_name])
+        plt.scatter(df['score'], df[method_name])
+        plt.xlabel('IC50')
+        plt.ylabel('Predicted Affinity')
+        plt.title(f'DockM8 {method_name}, snapshot A\n Pearson corr = {pearson_corr:.4f}\n Spearman corr = {spearman_corr:.4f}')
+        plt.show()
+
+        
+def consensus_ranking_generator(cons_method):
+
+    true_df = PandasTools.LoadSDF('data/ligands/ecft_scores.sdf', idName="ID")[['ID','HIPS code', 'score']]
+    true_df['old rank'] = true_df['score'].apply(pd.to_numeric).rank(method='min')
+    for f in os.listdir('data/A/dockm8/ranking/'):
+        df = pd.read_csv('data/A/dockm8/ranking/'+f)
+        selected_col = df.columns[1:-1]
+
+        metric = f.split('.')[0]
+
+
+        if cons_method == 'method1':
+            cons_df = consensus_methods.method1_ECR_best(df, metric, selected_col)
+            cons_metric= f'Method1_ECR_{metric}'
+        elif cons_method == 'method2':
+            cons_df = consensus_methods.method2_ECR_average(df, metric, selected_col)
+            cons_metric= f'Method2_ECR_{metric}'
+        elif cons_method == 'method6':
+            cons_df = consensus_methods.method6_Zscore_best(df, metric, selected_col)
+            cons_metric= f'Method6_Zscore_{metric}'
+
+        cons_df = prcoess_ranking_data(cons_df,true_df, cons_metric)
+
+        correlation_mapping(cons_df)
+

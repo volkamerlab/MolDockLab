@@ -32,3 +32,4 @@ def rescoring_functions(docking_methods, scoring_methods, snapshot_ID, data_size
             
             os.system(rescoring_cmd + ' > /dev/null')
             rank_correlation(rescoring_results_path)
+

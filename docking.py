@@ -1,4 +1,5 @@
 import os
+from data_preparation import prepare_diffdock_input
 
 def run_diffdock(snapshot, data_size):
     protein_path = f'../../data/{snapshot}/protein_protoss.pdb'

@@ -44,11 +44,11 @@ def find_MCS(df_scores, df_IC50, activity_threshold, sort_order):
 
 
 def write_mcs_file(df, mcs, data_name):
+    
     def has_scaffold(mol):
         return mol.HasSubstructMatch(mcs)
 
     IC50_df = df[df['ROMol'].apply(has_scaffold)][['HIPS code', 'ROMol', 'score']]
-    display(IC50_df.head())
     PandasTools.WriteSDF(IC50_df, f'data/ligands/{data_name}.sdf',idName="HIPS code", molColName='ROMol', properties=IC50_df.columns)
 
     return data_name, IC50_df.shape[0]

@@ -1,9 +1,32 @@
 from rdkit.Chem import PandasTools
 import pandas as pd
 import os
+import csv
 from rdkit import Chem
 import multiprocessing
 from rdkit import RDLogger
+
+
+
+def prepare_diffdock_input(protein_path, ligand_path, output_path):
+
+#Every line has path to same target and different smiles code.
+    header = ['complex_name', 'protein_path', 'ligand_description', 'protein_sequence']
+    df = PandasTools.LoadSDF(ligand_path, idName='ID', molColName="Molecule")
+    smiles = [Chem.MolToSmiles(mol) for mol in df.Molecule]
+    with open(output_path, 'w', newline='') as file:
+
+        # Create the CSV writer object
+        writer = csv.writer(file)
+
+        # Write the header row
+        writer.writerow(header)
+
+        for i, mol in df.iterrows():
+            writer.writerow(['', protein_path, smiles[i], ''])
+
+
+
 def create_IC50_sample():
     if 'IC50_mol_only.sdf' not in os.listdir('data/ligands/'):
         print("Extracting IC50 molcules ...")

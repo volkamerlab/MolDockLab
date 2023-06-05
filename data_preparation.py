@@ -47,7 +47,6 @@ def add_negative_data(data_name):
     train_df_struct['score'] = train_df['score'].to_list()
 
     PandasTools.WriteSDF(train_df_struct, f'data/ligands/{data_name}.sdf',idName="ID", molColName='ROMol', properties=train_df_struct.columns)
-    display(train_df_struct.head())
     return train_df_struct.shape[0], train_df_struct
 
 def run_gypsumdl(ligand_library, output):
@@ -59,9 +58,8 @@ def run_gypsumdl(ligand_library, output):
             # Clean output data (Remove the first row) and remove old one
         gypsum_df = PandasTools.LoadSDF('data/ligands/gypsum_dl_success.sdf', idName='ID', molColName='Molecule', strictParsing=True)
         cleaned_df = gypsum_df.iloc[1:, :]
-        cleaned_df = cleaned_df[['Molecule', 'HIPS code', "score"]]
-        display(cleaned_df)
-        PandasTools.WriteSDF(cleaned_df, f'data/ligands/{output}.sdf', idName='HIPS code', molColName='Molecule', properties=['HIPS code', "score"])
+        cleaned_df = cleaned_df[['Molecule', 'ID', "score"]]
+        PandasTools.WriteSDF(cleaned_df, f'data/ligands/{output}.sdf', idName='ID', molColName='Molecule', properties=cleaned_df.columns)
         os.remove('data/ligands/gypsum_dl_success.sdf')  
     else:
         print("Molecules are already prepared")

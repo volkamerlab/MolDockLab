@@ -194,8 +194,8 @@ def consensus_ranking_generator(cons_method, common_ID):
     '''''
     true_df = PandasTools.LoadSDF('data/ligands/ecft_scores.sdf', idName="ID")[['ID','HIPS code', 'score']]
     true_df['old rank'] = true_df['score'].apply(pd.to_numeric).rank(method='min')
-    for f in os.listdir('data/A/dockm8/ranking/'):
-        df = pd.read_csv('data/A/dockm8/ranking/'+f)
+    for f in os.listdir(f'data/A/dockm8/ranking/'):
+        df = pd.read_csv(f'data/A/dockm8/ranking/'+f)
         selected_col = df.columns[1:-1]
 
         metric = f.split('.')[0]

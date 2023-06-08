@@ -59,11 +59,11 @@ def rank_correlation(results_path, common_ID):
     docked_df = docked_df.sort_values(predicted_score).drop_duplicates(subset="ID")
 
     # Find Pearson and spearsman correlation between ranks of true and predicted values
-    docked_df['docked rank'] = docked_df[predicted_score].rank(ascending=arrange)
-    docked_df['true rank'] = docked_df['Activity'].rank()
+    # docked_df['docked rank'] = docked_df[predicted_score].rank(ascending=arrange)
+    # docked_df['true rank'] = docked_df['Activity'].rank()
 
-    spearman_corr = spearmanr(docked_df['true rank'], docked_df['docked rank'])[0]
-    pearson_corr = docked_df['true rank'].corr(docked_df['docked rank'])
+    # spearman_corr = spearmanr(docked_df['true rank'], docked_df['docked rank'])[0]
+    # pearson_corr = docked_df['true rank'].corr(docked_df['docked rank'])
 
     # Specify different colors for the differentiated points
     score_of_commonIDs = docked_df.loc[docked_df['ID'].isin(common_ID), 'Activity'].to_list()
@@ -91,6 +91,9 @@ def rank_correlation(results_path, common_ID):
     plt.title(f'{docked_method.upper()} {scoring_method.upper()}, snapshot A\n Pearson corr = {pearson_corr:.4f}\n Spearman corr = {spearman_corr:.4f}')
     plt.legend()
     plt.show()
+
+
+
 
 def prepare_df_for_comparison(results_path, ligand_library):
 
@@ -198,3 +201,56 @@ def consensus_ranking_generator(cons_method, common_ID):
 
         correlation_mapping(cons_df, common_ID)
 
+def oddt_correlation(results_path, common_ID):
+
+    docked_df = PandasTools.LoadSDF(results_path, idName='ID', molColName='Molecule', strictParsing=False)    
+    docked_method = results_path.split('_')[1]
+
+    if "score" in docked_df.columns:
+        docked_df.rename(columns = {'score':'Activity'}, inplace = True)
+
+    predicted_scores = ['rfscore_v1', 'rfscore_v2', 'rfscore_v3']
+    docked_df[predicted_scores] = docked_df[predicted_scores].apply(pd.to_numeric)
+    docked_df['Activity'] = docked_df[['Activity']].apply(pd.to_numeric)
+
+    correlations = []
+
+    for score in predicted_scores:
+
+        docked_df = docked_df.sort_values(score).drop_duplicates(subset="ID")
+        pearson_corr = docked_df['Activity'].corr(docked_df[score])
+        spearman_corr = spearmanr(docked_df['Activity'], docked_df[score])[0]
+        # correlations.append(zip(pearson_corr, spearman_corr))
+
+    figure, axis = plt.subplots(1, 3)
+    counter = 0
+    
+
+    # plt.scatter(docked_df['Activity'], docked_df[predicted_score], c='blue', label='Calculated Scores')
+    # plt.scatter(score_of_commonIDs, predicted_of_commonIDs, c='red', label='IC50')
+
+    figure.set_figheight(10)
+    figure.set_figwidth(30)
+
+    for j in range(3):
+
+        score_of_commonIDs = docked_df.loc[docked_df['ID'].isin(common_ID), 'Activity'].to_list()
+        predicted_of_commonIDs = docked_df.loc[docked_df['ID'].isin(common_ID),predicted_scores[counter]].to_list()
+
+        docked_df = docked_df.sort_values(score).drop_duplicates(subset="ID")
+        pearson_corr = docked_df['Activity'].corr(docked_df[predicted_scores[counter]])
+        spearman_corr = spearmanr(docked_df['Activity'], docked_df[predicted_scores[counter]])[0]
+
+        axis[j].scatter(docked_df['Activity'], docked_df[predicted_scores[counter]], c='blue', label='Calculated Scores')
+        axis[j].scatter(score_of_commonIDs, predicted_of_commonIDs, c='red', label='IC50')
+        
+
+        axis[j].set_title(f'{docked_method.upper()} {predicted_scores[counter]}, snapshot A\n Pearson corr = {pearson_corr:.4f}\n Spearman corr = {spearman_corr:.4f}')
+
+
+        counter += 1
+
+        if counter == 3:
+            plt.legend()
+            plt.show()
+            break

@@ -1,5 +1,6 @@
 import os
-from utility import rank_correlation
+import warnings
+from utility import rank_correlation, oddt_correlation
 
 def rescoring_functions(docking_methods, scoring_methods, snapshot_ID, data_size, common_ID):
 
@@ -29,6 +30,18 @@ def rescoring_functions(docking_methods, scoring_methods, snapshot_ID, data_size
             if scoring_method == "ad4":
                 rescoring_cmd =  f'./software/gnina -r {protein_path} -l {docked_library} --autobox_ligand {ref_path} -o {rescoring_results_path} --score_only --scoring ad4_scoring --cnn_scoring none --no_gpu'
             
+            if scoring_method == "oddt":
+                rescoring_cmd = f"oddt_cli {docked_library} --receptor data/{snapshot_ID}/protein_protoss_noligand.mol2 --score rfscore_v1_pdbbind2016 --score rfscore_v2_pdbbind2016 --score rfscore_v3_pdbbind2016 --score plecrf_pdbbind2016 -O {rescoring_results_path}"
+            
+            
+            # Filter the UserWarning
+            warnings.filterwarnings("ignore", category=UserWarning)
             os.system(rescoring_cmd + ' > /dev/null')
-            rank_correlation(rescoring_results_path, common_ID)
+            warnings.filterwarnings("default", category=UserWarning)
+           
+           
+            if scoring_method == "oddt":
+                oddt_correlation(rescoring_results_path, common_ID)
+            else:
+                rank_correlation(rescoring_results_path, common_ID)
 

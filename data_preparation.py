@@ -31,7 +31,7 @@ def create_IC50_sample():
     if 'IC50_mol_only.sdf' not in os.listdir('data/ligands/'):
         print("Extracting IC50 molcules ...")
         suppl = Chem.SDMolSupplier("data/ligands/Symeres.sdf")
-        suppl2 = Chem.SDMolSupplier("data/ligands/Hit 1.sdf")
+        suppl2 = Chem.SDMolSupplier("data/ligands/Hit1.sdf")
         HIPS_code = []
         structure = []
         IC_50 = []
@@ -81,7 +81,7 @@ def run_gypsumdl(ligand_library, output):
             # Clean output data (Remove the first row) and remove old one
         gypsum_df = PandasTools.LoadSDF('data/ligands/gypsum_dl_success.sdf', idName='ID', molColName='Molecule', strictParsing=True)
         cleaned_df = gypsum_df.iloc[1:, :]
-        cleaned_df = cleaned_df[['Molecule', 'ID', "score"]]
+        cleaned_df = cleaned_df[['Molecule', 'ID']]
         PandasTools.WriteSDF(cleaned_df, f'data/ligands/{output}.sdf', idName='ID', molColName='Molecule', properties=cleaned_df.columns)
         os.remove('data/ligands/gypsum_dl_success.sdf')  
     else:

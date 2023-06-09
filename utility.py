@@ -1,4 +1,6 @@
 import os
+import re
+
 import csv
 from rdkit import Chem
 from rdkit.Chem import PandasTools
@@ -26,6 +28,7 @@ def rank_correlation(results_path, common_ID):
 
     Draw a plot that has spearman and pearson correlation
     '''''
+
     RDLogger.DisableLog('rdApp.*')  
     # with open(subprocess.DEVNULL, 'w') as devnull:
     docked_df = PandasTools.LoadSDF(results_path, idName='ID', molColName='Molecule', strictParsing=False)    
@@ -38,50 +41,37 @@ def rank_correlation(results_path, common_ID):
 
     if scoring_method == "rf-score-vs":
         predicted_score = "RFScoreVS_v2"
-        arrange = False
 
     elif scoring_method in ['vinardo', 'ad4']:
         predicted_score = "minimizedAffinity"
-        arrange = False
 
     else:
         if docked_method == 'smina':
             predicted_score = "minimizedAffinity"
 
-            arrange = True
         elif docked_method == 'gnina':
             predicted_score = "CNNaffinity"
-            arrange = True
+
+        elif docked_method == 'diffdock':
+            predicted_score = 'confidence_score'
         scoring_method = ''
+
+
+    plt.figure(figsize=(10,8))	
+
 
     # Keep best predicted affinity for every compound.
     docked_df[[predicted_score, 'Activity']] = docked_df[[predicted_score, 'Activity']].apply(pd.to_numeric)
     docked_df = docked_df.sort_values(predicted_score).drop_duplicates(subset="ID")
 
-    # Find Pearson and spearsman correlation between ranks of true and predicted values
-    # docked_df['docked rank'] = docked_df[predicted_score].rank(ascending=arrange)
-    # docked_df['true rank'] = docked_df['Activity'].rank()
-
-    # spearman_corr = spearmanr(docked_df['true rank'], docked_df['docked rank'])[0]
-    # pearson_corr = docked_df['true rank'].corr(docked_df['docked rank'])
-
     # Specify different colors for the differentiated points
     score_of_commonIDs = docked_df.loc[docked_df['ID'].isin(common_ID), 'Activity'].to_list()
     predicted_of_commonIDs = docked_df.loc[docked_df['ID'].isin(common_ID), predicted_score].to_list()
 
-    # plt.scatter(docked_df['true rank'], docked_df['docked rank'], label='All Points')
-    
-    # plt.xlabel('True rank')
-    # plt.ylabel('Docked rank')
-    # plt.title(f'{docked_method.upper()} {scoring_method.upper()}, snapshot A\n Pearson corr = {pearson_corr:.4f}\n Spearman corr = {spearman_corr:.4f}')
-    # plt.legend()
-    # plt.show()
-
     # Find Pearson and spearsman correlation between true and predicted values
     pearson_corr = docked_df['Activity'].corr(docked_df[predicted_score])
     spearman_corr = spearmanr(docked_df['Activity'], docked_df[predicted_score])[0]
-    
-    plt.figure(figsize=(10,8))	
+
 
     plt.scatter(docked_df['Activity'], docked_df[predicted_score], c='blue', label='Calculated Scores')
     plt.scatter(score_of_commonIDs, predicted_of_commonIDs, c='red', label='IC50')
@@ -113,7 +103,6 @@ def prepare_df_for_comparison(results_path, ligand_library):
         docked_df = PandasTools.LoadSDF(results_path, idName='ID', molColName='Molecule', strictParsing=False)
         docked_df['ID'] = docked_df['ID'].str.split('_').str[0]
     true_df = PandasTools.LoadSDF(ligand_library, idName='ID', molColName='Molecule', strictParsing=False)[['HIPS code', 'ID', 'score']]
-    display(docked_df)
     merged_df = pd.merge(docked_df, true_df, on='ID').drop('ID', axis=1)
     merged_df.rename(columns = {'score':'Activity', 'HIPS code':'ID'}, inplace = True)
     return merged_df
@@ -254,3 +243,4 @@ def oddt_correlation(results_path, common_ID):
             plt.legend()
             plt.show()
             break
+

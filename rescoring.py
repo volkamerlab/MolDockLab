@@ -1,6 +1,7 @@
 import os
 import warnings
 from utility import rank_correlation, oddt_correlation
+import logging
 
 def rescoring_functions(docking_methods, scoring_methods, snapshot_ID, data_size, common_ID):
 
@@ -35,7 +36,8 @@ def rescoring_functions(docking_methods, scoring_methods, snapshot_ID, data_size
             
             
             # Filter the UserWarning
-            warnings.filterwarnings("ignore", category=UserWarning)
+            logging.getLogger("joblib").setLevel(logging.ERROR)
+
             os.system(rescoring_cmd + ' > /dev/null')
             warnings.filterwarnings("default", category=UserWarning)
            

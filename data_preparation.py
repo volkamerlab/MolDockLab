@@ -5,15 +5,15 @@ import csv
 from rdkit import Chem
 import multiprocessing
 from rdkit import RDLogger
+import re
 
 
+def write_diffdock_input(df, output_path):
 
-def prepare_diffdock_input(protein_path, ligand_path, output_path):
-
+    df['smiles'] = df['ROMol'].apply(Chem.MolToSmiles)
 #Every line has path to same target and different smiles code.
-    header = ['complex_name', 'protein_path', 'ligand_description', 'protein_sequence']
-    df = PandasTools.LoadSDF(ligand_path, idName='ID', molColName="Molecule")
-    smiles = [Chem.MolToSmiles(mol) for mol in df.Molecule]
+    header = ['ID', 'ligand_description']
+
     with open(output_path, 'w', newline='') as file:
 
         # Create the CSV writer object
@@ -23,7 +23,8 @@ def prepare_diffdock_input(protein_path, ligand_path, output_path):
         writer.writerow(header)
 
         for i, mol in df.iterrows():
-            writer.writerow(['', protein_path, smiles[i], ''])
+
+            writer.writerow([ mol['HIPS code'],mol['smiles'] ])
 
 
 
@@ -88,3 +89,48 @@ def run_gypsumdl(ligand_library, output):
         print("Molecules are already prepared")
     
     return f'data/ligands/{output}.sdf'
+
+def read_diffdock_output(df, results_path):
+    '''''
+    Read Rank 1 of every docked molecule using DiffDock and write a SDF file with ID, confidence score and Predicted structure
+
+    @Param :
+
+    df : true df data that has score and HIPS code as columns
+    results_path : Path of diffdock results
+
+    @Return:
+    Write a SDF file with ID, confidence score and Predicted structure
+    '''''
+
+    ids = []
+    confidence_score = []
+    mols = []
+    cwd = os.getcwd()
+    for dir in os.listdir(f'{cwd}/{results_path}'):
+        ids.append(dir)
+        for file in os.listdir(f'{cwd}/{results_path}{dir}'):
+
+            if file.startswith('index'):
+                for dir2 in os.listdir(f'{cwd}/{results_path}{dir}/{file}'):
+                    if dir2 == 'rank1.sdf':
+
+
+                        supplier = Chem.SDMolSupplier(f'{cwd}/{results_path}{dir}/{file}/{dir2}')
+                        for molecule in supplier:
+                                if molecule is not None:
+                                    mols.append(molecule)
+                    if dir2.startswith('rank1_conf'):
+                        match = re.search(r"[-+]?\d+(\.\d+)", dir2)
+                        if match:
+                            number = match.group(0)
+                            confidence_score.append(float(number))
+
+    diffdock_df = pd.DataFrame({'HIPS code': ids, 
+                                'confidence_score': confidence_score, 
+                                'Molecules': mols})
+
+    merged_df = pd.merge(diffdock_df, df,on='HIPS code', how='inner')[['Molecules', 'HIPS code', 'score', 'confidence_score']]
+    merged_df.rename(columns = {'HIPS code':'ID'}, inplace = True)
+
+    PandasTools.WriteSDF(merged_df, 'data/A/docked_diffdock_poses_A_212.sdf',idName='ID', molColName='Molecules', properties=merged_df.columns)

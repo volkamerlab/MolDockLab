@@ -1,25 +1,4 @@
 import os
-from data_preparation import prepare_diffdock_input
-
-def run_diffdock(snapshot, data_size):
-    protein_path = f'../../data/{snapshot}/protein_protoss.pdb'
-    ligand_path = f'data/ligands/gypsum_dl_success_cleaned_{data_size}.sdf'
-    output_path = 'data/ligands/ligands_protein_complex.csv'
-
-    prepare_diffdock_input(protein_path, ligand_path, output_path)
-
-    os.system('export PYTHONPATH=/home/hamza/Github/HitsForECFT/software/DiffDock:$PYTHONPATH')
-    os.system('export PYTHONPATH=/home/hamza/Github/HitsForECFT/software/DiffDock/esm:$PYTHONPATH')
-
-    os.chdir('software/DiffDock/')
-
-    protein_ligand_file = "../../data/protein_ligands_complex.csv"
-    results_path = '../../data/DiffDock/results/diffdock'
-
-    diffdock_cmd = f'python -m inference --protein_ligand_csv {protein_ligand_file} --out_dir {results_path} --inference_steps 20 --samples_per_complex 5 --batch_size 10 --actual_steps 18 --no_final_step_noise'
-    test_cmd = "python -m inference --protein_path ../../data/A/protein_protoss.pdb  --ligand_description 'CCCCC(NC(=O)CCC(=O)O)P(=O)(O)OC1=CC=CC=C1' --out_dir results/user_predictions_small --inference_steps 20 --samples_per_complex 40 --batch_size 1 --actual_steps 18"
-    os.system(diffdock_cmd)
-    os.chdir('../../')
 
 
 def gnina_docking(snapshot_ID, sdf_name, current_library, ref_file):

@@ -34,6 +34,8 @@ def find_MCS(df_scores, df_IC50, activity_threshold, sort_order):
     #determine first occurance of exceeding threshold and stop.
     first_occurrence_index = merged_df.index[cutoff].min()
     cutoff_data = merged_df.loc[:first_occurrence_index-1]
+    
+    PandasTools.WriteSDF(cutoff_data, f'data/A/cutoff20.sdf', idName='HIPS code', molColName='ROMol', properties=cutoff_data.columns)
 
     mcs = rdFMCS.FindMCS(cutoff_data.ROMol)
     

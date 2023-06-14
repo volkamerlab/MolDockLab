@@ -134,3 +134,48 @@ def read_diffdock_output(df, results_path):
     merged_df.rename(columns = {'HIPS code':'ID'}, inplace = True)
 
     PandasTools.WriteSDF(merged_df, 'data/A/docked_diffdock_poses_A_212.sdf',idName='ID', molColName='Molecules', properties=merged_df.columns)
+
+
+def read_diffdock_experiment(results_path):
+    '''''
+    Read Rank 1 of every docked molecule method using DiffDock with different tr_sigma_max, rot_sigma_max and tor_sigma_max and write a SDF file with ID, confidence score and Predicted structure
+
+    @Param :
+
+    results_path : Path of diffdock results which contain different experiments
+
+    @Return:
+    Write a SDF file with Experiment name having the used variables.
+    '''''
+
+    experiment_names = []
+
+    mols = []
+
+    cwd = os.getcwd()
+
+    for experiment_directory in os.listdir(f'{cwd}/{results_path}'):
+        
+        for experiment in os.listdir(f'{cwd}/{results_path}/{experiment_directory}'):
+                                   
+            for mol_dir in os.listdir(f'{cwd}/{results_path}/{experiment_directory}/{experiment}'):
+                if mol_dir.startswith('index'):
+                    for mol in os.listdir(f'{cwd}/{results_path}/{experiment_directory}/{experiment}/{mol_dir}'):
+                        if mol.startswith('rank1_'):
+                            supplier = Chem.SDMolSupplier(f'{cwd}/{results_path}/{experiment_directory}/{experiment}/{mol_dir}/{mol}')
+                            for molecule in supplier:
+                                if molecule is not None:
+                                    experiment_names.append(experiment) 
+                                    mols.append(molecule)
+
+    diffdock_exp = pd.DataFrame({'experiment_name': experiment_names, 
+                                'Molecules': mols})
+
+    PandasTools.WriteSDF(diffdock_exp, 'data/DiffDock/molecules_six_experiment.sdf',idName='experiment_name', molColName='Molecules', properties=diffdock_exp.columns)
+
+
+def read_pharmacophore_data(csv_path, df_scores):
+    pharmcophore_filtered_df = pd.read_csv('data/ligands/merged_pharmacophore_best.csv')[['HIPS code']]
+    pharmcophore_filtered_df = pd.merge(pharmcophore_filtered_df, df_scores, on='HIPS code', how='left')[['HIPS code', 'score', 'ROMol']]
+    PandasTools.WriteSDF(pharmcophore_filtered_df, 'data/ligands/pharmacophore_filtered_molecules.sdf',idName='HIPS code', molColName='ROMol', properties=pharmcophore_filtered_df.columns)
+    display(pharmcophore_filtered_df.sort_values(by='score'))

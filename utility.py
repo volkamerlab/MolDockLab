@@ -2,6 +2,7 @@ import os
 import re
 
 import csv
+import itertools
 from rdkit import Chem
 from rdkit.Chem import PandasTools
 import pandas as pd
@@ -244,3 +245,54 @@ def oddt_correlation(results_path, common_ID):
             plt.show()
             break
 
+
+def test_localdock_diffdock():
+
+
+    def edit_file(file_paths,  comb):
+
+        for file_path in file_paths:
+            with open(file_path, 'r') as file:
+                lines = file.readlines()
+
+            with open(file_path, 'w') as file:
+                for line in lines:
+
+                    if line.startswith('tr_sigma_max:'):
+                        new_line = f"tr_sigma_max: {comb[0]:.1f}"
+                        file.write(new_line + '\n')
+                        
+                    elif line.startswith('tor_sigma_max:'):
+                        new_line = f"tor_sigma_max: {comb[1]:.2f}"
+                        file.write(new_line + '\n')
+                        
+                    elif line.startswith('rot_sigma_max:'):
+                        new_line = f"rot_sigma_max: {comb[2]:.2f}"
+                        file.write(new_line + '\n')
+                            
+                    else:
+                        file.write(line)
+                    
+            
+
+    # Example usage
+    cwd = os.getcwd()
+    # path of diffdock
+    file_paths = [cwd+'/workdir/paper_confidence_model/model_parameters.yml', cwd+'/workdir/paper_score_model/model_parameters.yml']
+
+
+    tr_sigma_max = [10.0]
+    tor_sigma_max = [1.64]
+    rot_sigma_max = [1.40]
+
+    for _ in range(30):
+        tr_sigma_max.append((tr_sigma_max[-1] + 2))
+        tor_sigma_max.append((tor_sigma_max[-1] + 0.2))
+        rot_sigma_max.append((rot_sigma_max[-1] + 0.2))
+
+    combinations = list(itertools.product(tr_sigma_max, tor_sigma_max, rot_sigma_max))
+
+    for comb in combinations:
+        edit_file(file_paths, comb)
+        diffdock_cmd = f"python -m inference --protein_path data/ecft/protein_protoss_noligand.pdb --ligand '' --out_dir results/local_dock/tr{comb[0]}_tor{comb[1]}_rot_{comb[2]} --inference_steps 20 --samples_per_complex 5 --batch_size 10 --actual_steps 18 --no_final_step_noise"
+        os.system(diffdock_cmd)

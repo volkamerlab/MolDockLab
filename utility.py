@@ -1,5 +1,6 @@
 import os
 import re
+import glob
 
 import csv
 import itertools
@@ -11,7 +12,7 @@ from scipy.stats import spearmanr
 from matplotlib import pyplot as plt
 from rdkit import RDLogger
 from DockM8.scripts import consensus_methods
-
+from pymol import cmd, stored
 
 def rank_correlation(results_path, common_ID):
     '''''
@@ -360,3 +361,142 @@ def test_localdock_diffdock():
         edit_file(file_paths, comb)
         diffdock_cmd = f"python -m inference --protein_path data/ecft/protein_protoss_noligand.pdb --ligand '' --out_dir results/local_dock/tr{comb[0]}_tor{comb[1]}_rot_{comb[2]} --inference_steps 20 --samples_per_complex 5 --batch_size 10 --actual_steps 18 --no_final_step_noise"
         os.system(diffdock_cmd)
+
+
+def split_sdf( sdf_path, docked_group, number_of_poses):
+    '''''
+    This function takes a path of sdf file and split it into multiple sdf files with the same name of the ligand
+
+    @Param :
+    sdf_path --> path of sdf file
+    docked_group --> name of the group that the sdf file belongs to
+    number_of_poses --> number of poses that you want to split the sdf file into
+
+    @Return :
+    multiple sdf files with the same name of the ligand
+    '''''
+    suppl = Chem.SDMolSupplier(sdf_path)
+    os.makedirs(f"dcc_data/{docked_group}", exist_ok=True)
+    pose = 0
+    for mol in suppl:
+        if mol is None: continue
+        #variable that take ID of sdf file from the first row of the sdf file by reading it as a string
+        pose += 1
+        ligand_name = Chem.MolToMolBlock(mol).split()[0]  
+        #save sdf in a sdf file with the ligand name
+        Chem.MolToMolFile(mol, f"dcc_data/{docked_group}/{ligand_name}_{pose}.sdf")
+        if pose % number_of_poses == 0:
+            pose = 0   
+
+def interaction_fp_generator(chain, ligands_path):
+    complex_files = list(Path(ligands_path / "ligand_protein_complex").glob(f"*{chain}.pdb"))
+
+    structures = [Structure.from_pdbfile(str(pdb), ligand_name="HIT") for pdb in tqdm(complex_files)]
+
+    fp = InteractionFingerprint().calculate_fingerprint(
+            structures, # see comment above excluded Mpro-z structure
+            labeled=True, 
+            as_dataframe=True, 
+            remove_non_interacting_residues=True,
+            remove_empty_interaction_types=True,
+            ensure_same_sequence=False,
+        )
+
+    if not fp.values.shape[0]:
+        raise ValueError("Fingerprint is empty!")
+    fp_focused = fp[fp.sum(axis=1) > 5]
+    print(f"\n\n{ligands_path.stem}\n\nChain {chain}")
+    display(fp_focused.style.background_gradient(axis=None, cmap="YlGnBu"))
+    display(fingerprint_barplot(fp_focused))
+
+def create_2dposeview(docked_group):
+
+    '''''
+    This function takes a path of sdf files and create 2D interaction images for each sdf file
+    @Param :
+    docked_group --> name of the group that the sdf file belongs to
+    @Output :
+    2D interaction images for each sdf file in 2D_interactions folder
+    '''''
+
+    #create folder for the photos
+    os.makedirs(f"dcc_data/{docked_group}/2D_interactions", exist_ok=True)
+    #create list of all sdf files in the folder
+    sdf_files = glob.glob(f"dcc_data/{docked_group}/*.sdf")
+    for sdf in sdf_files:
+        os.system(f"./software/poseview-1.1.2-Linux-x64/poseview -l {sdf} -p data/A/protein_protoss_noligand.pdb -o dcc_data/{docked_group}/2D_interactions/{sdf.split('/')[-1].split('.')[0]}.png")
+
+def plipify_ligand_protein_preparation(ligands_path, protein_path, protein_name):
+    ''''
+    This function loads ligands and protein using pymol script commands and save both protein and ligand as a complex as pdb file.
+    It splits Chain C and D to separate pdb file and change ligand according to chain.
+
+    Parameters:
+    ------------
+    ligands_path: path to folder containing ligands in sdf format
+    protein_path: path to protein in pdb format
+    protein_name: name of protein
+    
+    Returns:
+    ------------
+    PDB file of ligand protein complex of chain C and D
+    '''
+    
+    #load ligands as list of sdf files
+    ligand_files = list(ligands_path.glob("*.pdb"))
+
+    #create folder to save ligand protein complex
+    if os.path.exists(ligands_path / "ligand_protein_complex"):
+        return
+    
+    os.makedirs(ligands_path / "ligand_protein_complex", exist_ok=True)
+
+    #load protein and ligand and save as pdb file
+    for sdf in ligand_files:
+        
+        ligand_name = sdf.stem
+
+
+
+        cmd.load(protein_path)
+        cmd.load(sdf, "LIG")
+        # select chain C and D
+        cmd.alter("all", "q=1.0")
+
+        chains = ['C', 'D']
+        for chain_id in chains:
+            
+            complex_name = f"{ligand_name}_{protein_name}_{chain_id}.pdb"
+            pdb_output = ligands_path / "ligand_protein_complex" / complex_name
+            cmd.select(f'chain_{chain_id}E', f'chain {chain_id}+E')
+            cmd.save(pdb_output, f'chain_{chain_id}E') 
+
+
+            # open pdb file and remove line starts with TER and write it at after line starts with HETATM.
+            with open(pdb_output, "r") as f:
+                    lines = f.readlines()
+                    new_lines = []
+                    for line in lines:
+                        if line.startswith("CONECT"):
+                            new_lines.append(f"TER \nEND\n")
+                            break
+                        if line.startswith("TER"):
+                            continue
+                        else:
+                            new_lines.append(line)
+                    with open(pdb_output, "w") as f:
+                        for line in new_lines:
+                            f.write(line)
+        cmd.delete("all")
+
+
+
+def sdf_preprocessing(sdf_files):
+    for sdf in sdf_files:
+        cmd.load(sdf)
+        cmd.alter('resi 0', 'resi = 287')
+        cmd.alter('resn UNK', 'resn = "HIT"')
+        cmd.alter('HETATM', 'chain="E"')
+        cmd.save(sdf.parent / f"{sdf.stem}.pdb") 
+        cmd.delete("all")
+

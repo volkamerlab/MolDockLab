@@ -137,39 +137,41 @@ def read_diffdock_output(df, results_path):
     confidence_score = []
     mols = []
     cwd = os.getcwd()
-    for dir in os.listdir(f'{cwd}/{results_path}'):
-        ids.append(dir)
-        for file in os.listdir(f'{cwd}/{results_path}{dir}'):
+    for local_dock in os.listdir(f'{cwd}/{results_path}'):
+        state = local_dock
+        for dir in os.listdir(f'{cwd}/{results_path}/{local_dock}'):
+            #ids.append(dir)
+            for file in os.listdir(f'{cwd}/{results_path}{local_dock}/{dir}'):
 
-            if file.startswith('index'):
-                for dir2 in os.listdir(f'{cwd}/{results_path}{dir}/{file}'):
-                    if dir2 == 'rank1.sdf':
+                if file.startswith('index'):
+                    for dir2 in os.listdir(f'{cwd}/{results_path}{local_dock}/{dir}/{file}'):
+                        if dir2 == 'rank1.sdf':
 
-                        supplier = Chem.SDMolSupplier(
-                            f'{cwd}/{results_path}{dir}/{file}/{dir2}')
-                        for molecule in supplier:
-                            if molecule is not None:
-                                mols.append(molecule)
-                    if dir2.startswith('rank1_conf'):
-                        match = re.search(r"[-+]?\d+(\.\d+)", dir2)
-                        if match:
-                            number = match.group(0)
-                            confidence_score.append(float(number))
+                            supplier = Chem.SDMolSupplier(
+                                f'{cwd}/{results_path}{local_dock}/{dir}/{file}/{dir2}')
+                            for molecule in supplier:
+                                if molecule is not None:
+                                    mols.append(molecule)
+                        if dir2.startswith('rank1_conf'):
+                            match = re.search(r"[-+]?\d+(\.\d+)", dir2)
+                            if match:
+                                number = match.group(0)
+                                confidence_score.append(float(number))
+                                ids.append(dir)
+        diffdock_df = pd.DataFrame({'HIPS code': ids,
+                                    'confidence_score': confidence_score,
+                                    'Molecules': mols})
 
-    diffdock_df = pd.DataFrame({'HIPS code': ids,
-                                'confidence_score': confidence_score,
-                                'Molecules': mols})
+        merged_df = pd.merge(diffdock_df, df, on='HIPS code', how='inner')[
+            ['Molecules', 'HIPS code', 'score', 'confidence_score']]
+        merged_df.rename(columns={'HIPS code': 'ID'}, inplace=True)
 
-    merged_df = pd.merge(diffdock_df, df, on='HIPS code', how='inner')[
-        ['Molecules', 'HIPS code', 'score', 'confidence_score']]
-    merged_df.rename(columns={'HIPS code': 'ID'}, inplace=True)
-
-    PandasTools.WriteSDF(
-        merged_df,
-        'data/A/docked_diffdock_poses_A_212.sdf',
-        idName='ID',
-        molColName='Molecules',
-        properties=merged_df.columns)
+        PandasTools.WriteSDF(
+            merged_df,
+            f'data/A/docked_diffdock_poses_A_{state}.sdf',
+            idName='ID',
+            molColName='Molecules',
+            properties=merged_df.columns)
 
 
 def read_diffdock_experiment(results_path):

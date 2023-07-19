@@ -363,7 +363,7 @@ def test_localdock_diffdock():
         os.system(diffdock_cmd)
 
 
-def split_sdf( sdf_path, docked_group, number_of_poses):
+def split_sdf(sdf_path, docked_group, number_of_poses):
     '''''
     This function takes a path of sdf file and split it into multiple sdf files with the same name of the ligand
 
@@ -382,12 +382,14 @@ def split_sdf( sdf_path, docked_group, number_of_poses):
         if mol is None: continue
         #variable that take ID of sdf file from the first row of the sdf file by reading it as a string
         pose += 1
-        ligand_name = Chem.MolToMolBlock(mol).split()[0]  
+        ligand_name = Chem.MolToMolBlock(mol).split()[0] 
         #save sdf in a sdf file with the ligand name
-        Chem.MolToMolFile(mol, f"dcc_data/{docked_group}/{ligand_name}_{pose}.sdf")
+        writer = Chem.SDWriter(f"dcc_data/{docked_group}/{ligand_name}_{pose}.sdf")
+        writer.write(mol)
+        writer.close()
         if pose % number_of_poses == 0:
             pose = 0   
-
+            
 def interaction_fp_generator(chain, ligands_path):
     complex_files = list(Path(ligands_path / "ligand_protein_complex").glob(f"*{chain}.pdb"))
 
@@ -418,7 +420,7 @@ def create_2dposeview(docked_group):
     @Output :
     2D interaction images for each sdf file in 2D_interactions folder
     '''''
-
+    
     #create folder for the photos
     os.makedirs(f"dcc_data/{docked_group}/2D_interactions", exist_ok=True)
     #create list of all sdf files in the folder

@@ -9,7 +9,6 @@ import re
 
 
 
-
 def run_gypsumdl(ligand_library, prepared_library_path):
     """
     Run gypsum_dl to generate 3D conformations of ligands
@@ -51,31 +50,3 @@ def run_gypsumdl(ligand_library, prepared_library_path):
         os.remove(str(prepared_library_path.parent / 'gypsum_dl_success.sdf'))
     else:
         print("Molecules are already prepared")
-
-
-def concat_all_poses(w_dir, docking_programs):
-        all_poses = pd.DataFrame()
-        for program in docking_programs:
-            try:
-                df = PandasTools.LoadSDF(
-                    f"{w_dir}/temp/{program.lower()}/{program.lower()}_poses.sdf",
-                    idName='Pose ID',
-                    molColName='Molecule',
-                    includeFingerprints=False,
-                    embedProps=False,
-                    removeHs=False,
-                    strictParsing=True)
-                all_poses = pd.concat([all_poses, df])
-            except Exception as e:
-                printlog(f'ERROR: Failed to write {program} SDF file!')
-                printlog(e)
-        try:
-            PandasTools.WriteSDF(all_poses,
-                                    f"{w_dir}/temp/allposes.sdf",
-                                    molColName='Molecule',
-                                    idName='Pose ID',
-                                    properties=list(all_poses.columns))
-            printlog('All poses succesfully combined!')
-        except Exception as e:
-            printlog('ERROR: Failed to write all_poses SDF file!')
-            printlog(e)

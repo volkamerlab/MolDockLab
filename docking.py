@@ -6,7 +6,7 @@ from rdkit import Chem
 from pathlib import Path
 from tqdm.auto import tqdm
 from rdkit.Chem import PandasTools
-from utlilities import get_ligand_coordinates_centers, extract_binding_pocket
+from utilities import get_ligand_coordinates_centers, extract_binding_pocket
 
 def docking(docking_methods, 
             protein_file,
@@ -415,7 +415,7 @@ def local_diffdock_docking(
                 supplier = Chem.SDMolSupplier(str(sdf_output.parent / mol / pose), sanitize=False, removeHs=False)
                 molecule = [mol for mol in supplier if mol is not None][0]
                 if molecule:
-                    ids.append(f"{mol}_local_diffdock_{i}")
+                    ids.append(f"{mol}_localdiffdock_{i}")
                     molecules.append(molecule)
                     if i >= 10:
                         confidence_scores.append(pose[17:-4])

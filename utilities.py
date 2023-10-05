@@ -178,3 +178,19 @@ def pdb_converter(
                 run_command(f"obabel -ipdb {str(protein_file)}"
                         f" -O {str(protein_file.parent / f'{protein_file.stem}.pdbqt')}"
                         " --partialcharges gasteiger -p -h")
+                
+
+
+def split_list(input_list, num_splits):
+    """Split a list into n equal parts."""
+    avg_size = len(input_list) // num_splits
+    remain = len(input_list) % num_splits
+    partitions = []
+    i = 0
+    for _ in range(num_splits):
+        partition_size = avg_size + 1 if remain > 0 else avg_size
+        partitions.append(input_list[i:i+partition_size])
+        i += partition_size
+        remain -= 1
+        # print(len(partitions[-1]))
+    return partitions

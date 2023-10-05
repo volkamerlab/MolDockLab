@@ -87,12 +87,7 @@ def gnina_docking(
     gnina_cmd = (
     f'./software/gnina -r {protein_file}' 
     f' -l {current_library} -o {sdf_output} ' 
-    f" --center_x {center_x}" 
-    f" --center_y {center_y}" 
-    f" --center_z {center_z}" 
-    f" --size_x 10" 
-    f" --size_y 10" 
-    f" --size_z 10" 
+    f' --autobox_ligand{str(ref_file)}' 
     f' --seed 1637317264 --exhaustiveness {exhaustiveness}' 
     f' --num_modes {str(n_poses)} --cnn_scoring rescore' 
     ' --cnn crossdock_default2018 --no_gpu --log data/log.txt'
@@ -139,12 +134,7 @@ def smina_docking(
     smina_cmd =( 
     f'./software/gnina -r {protein_file}' 
     f' -l {current_library} -o {sdf_output}' 
-    f" --center_x {center_x}" 
-    f" --center_y {center_y}" 
-    f" --center_z {center_z}" 
-    f" --size_x 5" 
-    f" --size_y 5" 
-    f" --size_z 5" 
+    f' --autobox_ligand{str(ref_file)}' 
     ' --autobox_extend=1 --seed 1637317264' 
     f' --exhaustiveness {exhaustiveness} --num_modes {str(n_poses)} --cnn_scoring=none'
     )

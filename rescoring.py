@@ -435,7 +435,6 @@ def read_rescoring_results(
             dfs.append(df)
 
             
-
     if 'rtmscore' == rescore_program:
         for csv_file in (rescoring_results_path / rescore_program).glob('*.csv'):
             df = pd.read_csv(csv_file)

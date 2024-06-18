@@ -1,4 +1,4 @@
-# MolDockLab
+# MolDockLab workflow
 
 Data-driven workflow to find optimal balance of docking tools, scoring functions and consensus methods for a target of interest.
 

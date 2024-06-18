@@ -1,5 +1,9 @@
-# ECFT-VS-pipeline
+# MolDockLab
 
-Energy coupling factor transporter transmembrane protein (ECF-T) is an antimicrobial target.
+Data-driven workflow to find optimal balance of docking tools, scoring functions and consensus methods for a target of interest.
 
-In our pipeline we'll perform structure-based virtual screening using traditional docking and blind docking for an in-house data of HIPS to find novel inhibitors.
+As a validation of the pipeline, we used EGFR target to study the differences between different pipelines.
+
+<p align="center">
+  <img src="moldocklab_fig.png">
+</p>

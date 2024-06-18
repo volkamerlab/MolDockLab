@@ -58,8 +58,7 @@ def get_ligand_coordinates_centers(ligand_molecule):
 
 def plants_pocket_generation(protein_file_mol2, ref_file_mol2):
 
-    plants_pocket_cmd = f"./software/PLANTS --mode bind {
-        str(ref_file_mol2)} {str(protein_file_mol2)}"
+    plants_pocket_cmd = f"./software/PLANTS --mode bind {str(ref_file_mol2)} {str(protein_file_mol2)}"
     run_command(plants_pocket_cmd)
     print('PLANTS bind mode was executed.')
 
@@ -67,7 +66,8 @@ def plants_pocket_generation(protein_file_mol2, ref_file_mol2):
 def pocket_coordinates_generation(
         protein_mol2,
         ref_file_mol2,
-        pocket_coordinates_path='bindingsite.def'):
+        pocket_coordinates_path='bindingsite.def'
+        ):
     '''
     This function generates the pocket coordinates of the protein file and returns the center of the pocket in x, y and z coordinates and the radius of the pocket
 
@@ -232,8 +232,7 @@ def pdb_converter(
             print('protein is already converted to mol2')
         else:
             # convert protein to pdbqt
-            run_command(f"obabel -ipdb {str(protein_file)}" f" -O {
-                        str(protein_file.parent / f'{protein_file.stem}.mol2')}")
+            run_command(f"obabel -ipdb {str(protein_file)}" f" -O {str(protein_file.parent / f'{protein_file.stem}.mol2')}")
 
     if "scorch" in rescore_programs:
 
@@ -274,8 +273,7 @@ def read_posebusters_data(df):
         x.select_dtypes(
             include=['bool']).astype(int).sum())
 
-    unique_id_count = df.groupby('docking_tool')[
-        'original_id'].nunique().reset_index(name='unique_id_count')
+    unique_id_count = df.groupby('docking_tool')['original_id'].nunique().reset_index(name='unique_id_count')
 
     df_grouped['Number of Docked Molecules'] = list(
         unique_id_count['unique_id_count'])
@@ -346,7 +344,6 @@ def handling_multicollinearity(df, threshold=0.9, true_value_col='true_value'):
             columns_to_remove.add(col2)
         else:
             columns_to_remove.add(col1)
-    print(f"Scores of {
-          columns_to_remove} were found to highly correlate. Therefore, they are removed")
+    print(f"Scores of {columns_to_remove} were found to highly correlate. Therefore, they are removed")
     df.drop(columns=list(columns_to_remove), inplace=True)
     return df

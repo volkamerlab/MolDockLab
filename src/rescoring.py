@@ -9,8 +9,8 @@ from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 from rdkit.Chem import PandasTools
 
-from preprocessing import plants_preprocessing
-from utilities import (any_in_list, pdb_converter,
+from src.preprocessing import plants_preprocessing
+from src.utilities import (any_in_list, pdb_converter,
                        pocket_coordinates_generation, run_command, split_sdf)
 
 
@@ -274,8 +274,7 @@ def chemplp_rescoring(
         protein_file, docked_library_path, ref_file)
     center_x, center_y, center_z, radius = pocket_coordinates_generation(
         protein_mol2, ref_ligand_mol2, pocket_coordinates_path='bindingsite.def')
-    print(f"Center of the pocket is: {center_x}, {
-          center_y}, {center_z} with radius of {radius}")
+    print(f"Center of the pocket is: {center_x}, {center_y}, {center_z} with radius of {radius}")
 
     chemplp_config = [
         '# search algorithm\n',
@@ -297,23 +296,15 @@ def chemplp_rescoring(
         'chemplp_clash_include_14 1\n',
         'chemplp_clash_include_HH 0\n',
         '# input\n',
-        f'protein_file {
-            str(protein_mol2)}\n',
-        f'ligand_file {
-            str(mols_library_mol2)}\n',
+        f'protein_file {str(protein_mol2)}\n',
+        f'ligand_file {str(mols_library_mol2)}\n',
         '# output\n',
-        f'output_dir {
-            str(
-                output_path.parent / output_path.stem)}\n',
+        f'output_dir {str(output_path.parent / output_path.stem)}\n',
         '# write single mol2 files (e.g. for RMSD calculation)\n',
         'write_multi_mol2 1\n',
         '# binding site definition\n',
-        f'bindingsite_center {
-            str(center_x)} {
-            str(center_y)} {
-            str(center_z)}\n',
-        f'bindingsite_radius {
-            str(radius)}\n',
+        f'bindingsite_center {str(center_x)} {str(center_y)} {str(center_z)}\n',
+        f'bindingsite_radius {str(radius)}\n',
         '# cluster algorithm\n',
         'cluster_structures 10\n',
         'cluster_rmsd 2.0\n',
@@ -333,8 +324,7 @@ def chemplp_rescoring(
         configwriter.writelines(chemplp_config)
 
     # Run PLANTS docking
-    return f'./software/PLANTS --mode rescore {
-        str(chemplp_rescoring_config_path_config)}'
+    return f'./software/PLANTS --mode rescore {str(chemplp_rescoring_config_path_config)}'
 
 
 def linf9_rescoring(
@@ -479,8 +469,7 @@ def hyde_rescoring(
         ref_file = ref_file.parent / f'{ref_file.stem}.sdf'
         if not os.path.exists(ref_file):
             print('convert pdb to sdf')
-            pdb_to_sdf = f'obabel {
-                str(ref_file.parent / ref_file.stem)}.pdb -O {str(ref_file)}'
+            pdb_to_sdf = f'obabel {str(ref_file.parent / ref_file.stem)}.pdb -O {str(ref_file)}'
             subprocess.run(pdb_to_sdf, shell=True)
     return (
         "software/hydescorer-2.0.0/hydescorer"

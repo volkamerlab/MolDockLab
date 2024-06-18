@@ -8,8 +8,8 @@ from rdkit import Chem
 from rdkit.Chem import AllChem, PandasTools
 from rdkit.Chem.Scaffolds import MurckoScaffold
 
-from ranking import norm_scores
-from utilities import handling_multicollinearity, run_command
+from src.ranking import norm_scores
+from src.utilities import handling_multicollinearity, run_command
 
 
 def merge_activity_values(
@@ -174,9 +174,8 @@ def cv_split(
         train_id = clustered_df.iloc[train_idx][idx_col]
         test_id = clustered_df.iloc[test_idx][idx_col]
         print(
-            f"Train dataset has {
-                len(train_id)} and test dataset has {
-                len(test_id)}")
+            f"Train dataset has {len(train_id)} and test dataset has {len(test_id)}"
+            )
         train_df = df_rescored[df_rescored['id'].isin(list(train_id))]
         test_df = df_rescored[df_rescored['id'].isin(list(test_id))]
 

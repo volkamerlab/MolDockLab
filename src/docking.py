@@ -8,8 +8,8 @@ from rdkit import Chem
 from rdkit.Chem import PandasTools
 from tqdm.auto import tqdm
 
-from preprocessing import plants_preprocessing
-from utilities import (extract_binding_pocket, pocket_coordinates_generation,
+from src.preprocessing import plants_preprocessing
+from src.utilities import (extract_binding_pocket, pocket_coordinates_generation,
                        read_posebusters_data, run_command)
 
 
@@ -46,9 +46,7 @@ def docking(
         output_file = docking_folder / f'{docking_method.lower()}_poses.sdf'
         output_files.append(output_file)
         if output_file in os.listdir(docking_folder):
-            print(
-                f"{output_file} is already docked with {
-                    docking_method.upper()}")
+            print(f"{output_file} is already docked with {docking_method.upper()}")
             continue
 
         docking_dict[docking_method.lower()](
@@ -66,8 +64,8 @@ def docking(
 
     if 'allposes.sdf' in os.listdir(OUTPUT):
         print(
-            f"Compounds are already docked and concatenated, CHECK {
-                OUTPUT / 'allposes.sdf'}")
+            f"Compounds are already docked and concatenated, CHECK {OUTPUT / 'allposes.sdf'}"
+            )
         return
     try:
         for output_file in output_files:
@@ -391,8 +389,7 @@ def diffdock_docking(
             print('Poses are already generated using DiffDock/Local DiffDock')
             break
         if local_diffdock:
-            diffdock_cmd += f" --binding_site_residues {
-                str(protein_file.parent / pocket_res_indices)}"
+            diffdock_cmd += f" --binding_site_residues {str(protein_file.parent / pocket_res_indices)}"
 
         if sdf_output.name in os.listdir(sdf_output.parent):
             print(f"Compounds are already docked with DiffDock")
@@ -490,8 +487,7 @@ def flexx_docking(
     ref_file_sdf = ref_file.with_suffix('.sdf')
     if ref_file.suffix == '.pdb' and ref_file_sdf.name not in os.listdir(
             ref_file.parent):
-        obabel_cmd = f"obabel -ipdb {str(ref_file)
-                                     } -osdf -O {str(ref_file_sdf)}"
+        obabel_cmd = f"obabel -ipdb {str(ref_file)} -osdf -O {str(ref_file_sdf)}"
         run_command(obabel_cmd)
 
     else:

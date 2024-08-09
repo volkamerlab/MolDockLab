@@ -4,9 +4,9 @@ import os
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import AllChem, PandasTools
+from pathlib import Path
 
-
-def minimize_and_select_most_stable(row, numConfs=10):
+def minimize_and_select_most_stable(row: pd.Series, numConfs: int = 10) -> pd.DataFrame:
     """
     Minimize the energy of a molecule and select the most stable conformer
     Args:
@@ -42,14 +42,15 @@ def minimize_and_select_most_stable(row, numConfs=10):
     return new_row
 
 
-def run_gypsumdl(ligand_library, prepared_library_path, id_column='ID'):
+def run_gypsumdl(ligand_library: Path, prepared_library_path: Path, id_column : str ='ID') -> Path:
     """
     Run gypsum_dl to generate 3D conformations of ligands
-    @Params:
-    ligand_library: Path to ligand's library
-    prepared_library_path: Path to prepared library
+    Args:
+        ligand_library: Path to ligand's library
+        prepared_library_path: Path to prepared library
 
-    @Return: Path to output file
+    Return: 
+        Path to output file
     """
     ncpus = multiprocessing.cpu_count() - 2
     gypsum_dl_command = (
@@ -77,12 +78,9 @@ def run_gypsumdl(ligand_library, prepared_library_path, id_column='ID'):
             molColName='Molecule',
             strictParsing=True
         )
-
         cleaned_df = gypsum_df.iloc[1:, :]
         cleaned_df = cleaned_df[['Molecule', id_column]]
-
         failed_file = prepared_library_path.parent / "gypsum_dl_failed.smi"
-
         if failed_file.exists():
             failed_cpds = pd.read_csv(
                 failed_file,

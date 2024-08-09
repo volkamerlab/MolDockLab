@@ -9,23 +9,40 @@ from rdkit.Chem import PandasTools
 from tqdm.auto import tqdm
 
 from src.preprocessing import plants_preprocessing
-from src.utilities import (extract_binding_pocket, pocket_coordinates_generation,
-                       read_posebusters_data, run_command)
+from src.utilities import (
+    extract_binding_pocket, 
+    pocket_coordinates_generation,
+    read_posebusters_data, run_command
+    )
 
 
 def docking(
-    docking_methods,
-    protein_file,
-    current_library,
-    ref_file,
-    exhaustiveness,
-    n_poses,
-    OUTPUT,
-    id_column='ID',
-    time_calc=False,
-    local_diffdock=False
+    docking_methods : list,
+    protein_file : Path,
+    current_library : Path,
+    ref_file : Path,
+    exhaustiveness : int,
+    n_poses : int,
+    OUTPUT : Path,
+    id_column : str = 'ID',
+    time_calc : bool =False,
+    local_diffdock : bool =False
 ):
+    '''
+    Perform docking using different methods on a protein and a library of ligands.
 
+    Args:
+        docking_methods (list): list of docking methods to be used
+        protein_file (Path): path to the protein file in PDB format
+        current_library (Path): path to the library of ligands in SDF format
+        ref_file (Path): path to the reference ligand file in SDF format
+        exhaustiveness (int): level of exhaustiveness for the docking search
+        n_poses (int): number of poses to be generated
+        OUTPUT (Path): path to the output directory
+        id_column (str): name of the column containing the IDs of the ligands
+        time_calc (bool): whether to calculate the time taken for the docking
+        local_diffdock (bool): whether to use local DiffDock
+    '''
     docking_dict = {
         'gnina': gnina_docking,
         'smina': smina_docking,
@@ -93,15 +110,26 @@ def docking(
 
 
 def gnina_docking(
-        protein_file,
-        sdf_output,
-        current_library,
-        ref_file,
-        exhaustiveness,
-        n_poses,
-        local_diffdock
+        protein_file : Path,
+        sdf_output : Path,
+        current_library : Path,
+        ref_file : Path,
+        exhaustiveness : int,
+        n_poses : int,
+        local_diffdock : bool
 ):
+    '''
+    Perform docking using the GNINA software on a protein and a reference ligand. Docked poses are saved in SDF format.
 
+    Args:
+        protein_file (Path): path to the protein file in PDB format
+        sdf_output (Path): path to the output file in SDF format
+        current_library (Path): path to the library of ligands in SDF format
+        ref_file (Path): path to the reference ligand file in SDF format
+        exhaustiveness (int): level of exhaustiveness for the docking search, ranges from 0-8
+        n_poses (int): number of poses to be generated
+        local_diffdock (bool): whether to use local DiffDock
+    '''
     gnina_cmd = (
         f'./software/gnina -r {protein_file}'
         f' -l {current_library}'
@@ -154,15 +182,26 @@ def gnina_docking(
 
 
 def smina_docking(
-        protein_file,
-        sdf_output,
-        current_library,
-        ref_file,
-        exhaustiveness,
-        n_poses,
-        local_diffdock
+        protein_file : Path,
+        sdf_output : Path,
+        current_library : Path,
+        ref_file : Path,
+        exhaustiveness : int,
+        n_poses : int,
+        local_diffdock : bool
 ):
+    '''
+    Perform docking using the SMINA software on a protein and a reference ligand. Docked poses are saved in SDF format.
 
+    Args:
+        protein_file (Path): path to the protein file in PDB format
+        sdf_output (Path): path to the output file in SDF format
+        current_library (Path): path to the library of ligands in SDF format
+        ref_file (Path): path to the reference ligand file in SDF format
+        exhaustiveness (int): level of exhaustiveness for the docking search, ranges from 0-8
+        n_poses (int): number of poses to be generated
+        local_diffdock (bool): whether to use local DiffDock
+    '''
     smina_cmd = (
         f'./software/gnina -r {protein_file}'
         f' -l {current_library} -o {sdf_output}'
@@ -213,26 +252,25 @@ def smina_docking(
 
 
 def plants_docking(
-        protein_file,
-        sdf_output,
-        current_library,
-        ref_file,
-        exhaustiveness,
-        n_poses,
-        local_diffdock
+        protein_file : Path,
+        sdf_output : Path,
+        current_library : Path,
+        ref_file : Path,
+        exhaustiveness : int,
+        n_poses : int,
+        local_diffdock : bool
 ):
     '''
-    Perform docking using the PLANTS software on a protein and a reference ligand, and return the path to the results.
+    Perform docking using the PLANTS software on a protein and a reference ligand. Docked poses are saved in SDF format.
 
     Args:
-    protein_file (str): path to the protein file in PDB format
-    ref_file (str): path to the reference ligand file in SDF format
-    software (str): path to the software folder
-    exhaustiveness (int): level of exhaustiveness for the docking search, ranges from 0-8
-    n_poses (int): number of poses to be generated
-
-    Returns:
-    results_path (str): the path to the results file in SDF format
+        protein_file (Path): path to the protein file in PDB format
+        sdf_output (Path): path to the output file in SDF format
+        current_library (Path): path to the library of ligands in SDF format
+        ref_file (Path): path to the reference ligand file in SDF format
+        exhaustiveness (int): level of exhaustiveness for the docking search, ranges from 0-8
+        n_poses (int): number of poses to be generated
+        local_diffdock (bool): whether to use local DiffDock
     '''
     # convert to structure, ligands, reference ligand to mol2
     print(current_library)
@@ -345,14 +383,28 @@ def plants_docking(
 
 
 def diffdock_docking(
-        protein_file,
-        sdf_output,
-        current_library,
-        ref_file,
-        exhaustiveness,
-        n_poses,
-        local_diffdock=False
+        protein_file : Path,
+        sdf_output : Path,
+        current_library : Path,
+        ref_file : Path,
+        exhaustiveness : int,
+        n_poses : int,
+        local_diffdock : bool = False
 ):
+    
+    '''
+    Perform docking using the DiffDock software or Local DiffDock on a protein and a reference ligand. Docked poses are saved in SDF format.
+
+    Args:
+        protein_file (Path): path to the protein file in PDB format
+        sdf_output (Path): path to the output file in SDF format
+        current_library (Path): path to the library of ligands in SDF format
+        ref_file (Path): path to the reference ligand file in SDF format
+        exhaustiveness (int): level of exhaustiveness for the docking search, ranges from 0-8
+        n_poses (int): number of poses to be generated
+        local_diffdock (bool): whether to use local DiffDock
+    '''
+
     library_df = PandasTools.LoadSDF(str(current_library))
     molecule_id = library_df['ID'].tolist()
     ligands = [Chem.MolToSmiles(mol) for mol in library_df['ROMol'].tolist()]
@@ -379,7 +431,6 @@ def diffdock_docking(
             f" --out_dir {str(protein_file.parent)}"
             f" --inference_steps 20"
             f" --samples_per_complex {n_poses}"
-            # f" --save_visualisation"
             f" --batch_size 8"
             f" --actual_steps 18"
             f" --no_final_step_noise"
@@ -410,12 +461,19 @@ def diffdock_docking(
     # concatenate all poses in one dataframe
 
 
-def reading_diffdock_poses(sdf_output, n_poses, local_diffdock):
+def reading_diffdock_poses(sdf_output : Path, n_poses : int, local_diffdock : bool) -> None:
     
+    '''
+    Read the output of the DiffDock software and concatenate the poses in one SDF file.
+
+    Args:
+        sdf_output (Path): path to the output file in SDF format
+        n_poses (int): number of poses to be generated
+        local_diffdock (bool): whether local DiffDock was used
+    '''
     diffdock_type = 'diffdock'
     if local_diffdock:
         diffdock_type = 'localdiffdock'
-    
     list_molecules = os.listdir(str(sdf_output.parent))
     df = pd.DataFrame(columns=['ID', 'molecules', 'confidence_score'])
     molecules = []
@@ -464,26 +522,27 @@ def reading_diffdock_poses(sdf_output, n_poses, local_diffdock):
 
 
 def flexx_docking(
-        protein_file,
-        sdf_output,
-        current_library,
-        ref_file,
-        exhaustiveness,
-        n_poses,
-        local_diffdock
+        protein_file : Path,
+        sdf_output : Path,
+        current_library : Path,
+        ref_file : Path,
+        exhaustiveness : int,
+        n_poses : int,
+        local_diffdock : bool
 ):
-    """
-    The function docks the ligands with FlexX and returns the poses in SDF format
+    '''
+    Perform docking using the FlexX software on a protein and a reference ligand. Docked poses are saved in SDF format.
+
     Args:
-        protein_file: protein file in PDB format
-        sdf_output: path to the output file in SDF format
-        current_library: library of ligands in SDF format
-        ref_file: reference ligand in SDF format
-        exhaustiveness: level of exhaustiveness for the docking search, ranges from 0-8
-        n_poses: number of poses to be generated
-    Returns:
-        flexx_command: command to run FlexX
-    """
+        protein_file (Path): path to the protein file in PDB format
+        sdf_output (Path): path to the output file in SDF format
+        current_library (Path): path to the library of ligands in SDF format
+        ref_file (Path): path to the reference ligand file in SDF format
+        exhaustiveness (int): level of exhaustiveness for the docking search, ranges from 0-8
+        n_poses (int): number of poses to be generated
+        local_diffdock (bool): whether to use local DiffDock
+    '''
+
     ref_file_sdf = ref_file.with_suffix('.sdf')
     if ref_file.suffix == '.pdb' and ref_file_sdf.name not in os.listdir(
             ref_file.parent):
@@ -536,7 +595,7 @@ def flexx_docking(
         print('ID format is correct')
 
 
-def poses_checker(poses_path, protein_path, output_file):
+def poses_checker(poses_path : Path, protein_path : Path, output_file : Path) -> pd.DataFrame:
     """
     The function checks if the poses are already scored with PoseBusters, if not, it runs the PoseBusters
     to check the quality of generated poses and returns the filtered dataframe

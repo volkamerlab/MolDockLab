@@ -4,11 +4,13 @@ import numpy as np
 import pandas as pd
 import torch
 import tqdm as tqdm
+
+from pathlib import Path
 from scipy.optimize import minimize
 from sklearn.preprocessing import StandardScaler
 
 
-def scores_preprocessing(df):
+def scores_preprocessing(df: pd.DataFrame) -> tuple:
     """
     Preprocess the scores for the optimization
     Args:
@@ -91,7 +93,7 @@ def scores_preprocessing(df):
     return X, y, docking_cost, rescoring_cost, docking_tools, scoring_tools
 
 
-def prediction(c_r, c_d, X):
+def prediction(c_r: torch.Tensor, c_d:torch.Tensor, X: torch.Tensor) -> torch.Tensor:
     """
     Predict the binding affinity
     Args:
@@ -104,7 +106,7 @@ def prediction(c_r, c_d, X):
     return (X * c_r * c_d).nan_to_num().sum(1).sum(1)
 
 
-def prepare_parameters(x):
+def prepare_parameters(x: np.array) -> tuple:
     """
     Prepare the parameters for the optimization
     Args:
@@ -121,7 +123,15 @@ def prepare_parameters(x):
     return c_r, c_d
 
 
-def loss(x_rand, X, y, docking_cost, scoring_cost, reg=0.1, verbose=False):
+def loss(
+        x_rand : np.array, 
+        X: torch.Tensor, 
+        y: torch.Tensor, 
+        docking_cost: np.array, 
+        scoring_cost: np.array, 
+        reg : float=0.1, 
+        verbose : bool=False
+        ) -> float:
     """
     Loss function for the optimization
     Args:
@@ -146,7 +156,14 @@ def loss(x_rand, X, y, docking_cost, scoring_cost, reg=0.1, verbose=False):
     return model_loss + (reg * regularization)
 
 
-def optimize_score(X, y, docking_cost, scoring_cost, reg=0.3, iter=500):
+def optimize_score(
+        X: torch.Tensor, 
+        y : torch.Tensor, 
+        docking_cost : np.array, 
+        scoring_cost : np.array, 
+        reg : float =0.3, 
+        iter : int =500
+        ) -> tuple:
     """
     Optimize the weights for the scoring function
     Args:
@@ -185,13 +202,13 @@ def optimize_score(X, y, docking_cost, scoring_cost, reg=0.3, iter=500):
 
 
 def score_pose_optimization(
-        X,
-        y,
-        docking_cost,
-        scoring_cost,
-        weights_path,
-        alphas,
-        iter=500) -> dict:
+        X: torch.Tensor, 
+        y : torch.Tensor, 
+        docking_cost : np.array, 
+        scoring_cost : np.array, 
+        weights_path : Path,
+        alphas : list,
+        iter : int =500) -> dict:
     """
     Optimize the weights for the scoring functions with list of different regularization parameters
     Args:
@@ -225,7 +242,11 @@ def score_pose_optimization(
     return best_weights
 
 
-def mapping_normalized_weights(best_weights, scoring_tools, docking_tools):
+def mapping_normalized_weights(
+        best_weights : np.array, 
+        scoring_tools : list, 
+        docking_tools : list
+        ) -> dict:
     """
     Map the normalized weights of the optimization function to the scoring functions and docking tools
 

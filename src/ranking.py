@@ -10,7 +10,14 @@ from sklearn.preprocessing import RobustScaler
 # Calculate Spearman correlation
 
 def split_list(input_list, num_splits):
-    """Split a list into n equal parts."""
+    '''
+    Split a list into n parts.
+    Args:
+        input_list: list to be split
+        num_splits: number of splits
+    Returns: 
+        list of splitted lists
+    '''
     avg_size = len(input_list) // num_splits
     remain = len(input_list) % num_splits
     partitions = []
@@ -25,9 +32,11 @@ def split_list(input_list, num_splits):
 def all_combinations(docking_programs: list, rescoring_programs: list):
     """
     Generate all combinations of docking methods and scoring functions.
-    @param docking_programs: list of docking methods
-    @param rescoring_programs: list of rescoring programs
-    @return: list of tuples with all combinations of docking methods and scoring functions
+    Args:
+        docking_programs: list of docking methods
+        rescoring_programs: list of rescoring programs
+    Returns: 
+               list of tuples with all combinations of docking methods and scoring functions
     """
     all_comb_scoring_function = [item for r in range(1, len(rescoring_programs) + 1) 
                                  for item in combinations(sorted(rescoring_programs), r)]
@@ -86,14 +95,16 @@ def process_combination(
         ):
         """
         Rank poses using different ranking methods
-                @param splitted_comb: list of splitted combinations
-                @param df_rescored: dataframe with rescored poses
-                @param df_scores: dataframe with ground truth scores with two columns: ID and score
-                @param ranking_method: ranking method
-                @param output_path: path to output folder
-                @param index: index of the splitted_comb
+        Args:
+                splitted_comb: list of splitted combinations
+                df_rescored: dataframe with rescored poses
+                df_scores: dataframe with ground truth scores with two columns: ID and score
+                ranking_method: ranking method
+                output_path: path to output folder
+                index: index of the splitted_comb
 
-                return: Write the results of every ranking method to a csv file
+        Return: 
+                Write the results of every ranking method to a csv file
         """
         corr_dict ={
                'docking_tool': [], 
@@ -200,12 +211,15 @@ def poses_ranking(
 ):
         """
         Rank poses using different ranking methods
-        @param ranking_methods: list of ranking methods
-        @param df_rescored: dataframe with rescored poses
-        @param output_path: path to output folder
-        @param df_scores: dataframe with ground truth scores with two columns: ID and score
 
-        return: Write the results of every ranking method to a big csv file and concat all the results to a big csv file
+        Args:
+                ranking_methods: list of ranking methods
+                df_rescored: dataframe with rescored poses
+                output_path: path to output folder
+                df_scores: dataframe with ground truth scores with two columns: ID and score
+
+        Return: 
+                Write the results of every ranking method to a big csv file and concat all the results to a big csv file
         """
         ncpus = cpu_count()
 

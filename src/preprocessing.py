@@ -8,19 +8,20 @@ from rdkit import Chem
 from rdkit.Chem import AllChem, PandasTools
 from rdkit.Chem.Scaffolds import MurckoScaffold
 
+from pathlib import Path
 from src.ranking import norm_scores
 from src.utilities import handling_multicollinearity, run_command
 
 
 def merge_activity_values(
-    norm_scored_path,
-    true_value_path,
-    true_value_col,
-    scored_id_col,
-    activity_col,
-    lower_better_true_value,
-    threshold
-):
+    norm_scored_path : Path,
+    true_value_path : Path,
+    true_value_col : str,
+    scored_id_col : str,
+    activity_col : str,
+    lower_better_true_value : bool,
+    threshold : float
+    ) -> pd.DataFrame:
     """
     Merging the experimental values and the activity class to the normalized scores of scoring function
 
@@ -73,7 +74,7 @@ def merge_activity_values(
     return df_rescored
 
 
-def get_scaffold(mol):
+def get_scaffold(mol : rdkit.Chem.Mol) -> rdkit.Chem.rdchem.Mol:
     """
     Get the Murcko scaffold of a molecule
     Args:
@@ -84,7 +85,7 @@ def get_scaffold(mol):
     return MurckoScaffold.GetScaffoldForMol(mol)
 
 
-def get_fp(scaffold):
+def get_fp(scaffold : rdkit.Chem.Mol) -> np.ndarray:
     """
     Get the Morgan fingerprint of a molecule
     Args:
@@ -98,7 +99,7 @@ def get_fp(scaffold):
             scaffold, radius=2, nBits=2048))
 
 
-def get_cluster_labels(scaffold_fps, min_cluster_size=2):
+def get_cluster_labels(scaffold_fps : list, min_cluster_size : int=2) -> np.ndarray:
     """
     Cluster the molecules based on their scaffold fingerprints
     Args:
@@ -114,7 +115,7 @@ def get_cluster_labels(scaffold_fps, min_cluster_size=2):
     return clusterer.labels_
 
 
-def hdbscan_scaffold_split(original_data_path, min_cluster_size):
+def hdbscan_scaffold_split(original_data_path : Path, min_cluster_size : int) -> pd.DataFrame:
     """
     Split the dataset based on the scaffold of the molecules
     Args:
@@ -140,12 +141,13 @@ def hdbscan_scaffold_split(original_data_path, min_cluster_size):
 
 
 def cv_split(
-        clustered_df,
-        df_rescored,
-        idx_col,
-        n_splits,
-        output_path,
-        target_name):
+        clustered_df : pd.DataFrame,
+        df_rescored : pd.DataFrame,
+        idx_col : str,
+        n_splits : int,
+        output_path : Path,
+        target_name : str
+        ):
     """
     Split the dataset based on the scaffold of the molecules
     Args:
@@ -188,7 +190,11 @@ def cv_split(
                                 f'{target_name}_test_{i}.csv'), index=False)
 
 
-def plants_preprocessing(protein_file, molecules_library, ref_file):
+def plants_preprocessing(
+        protein_file : Path, 
+        molecules_library : Path, 
+        ref_file : Path
+        ):
     # Convert protein file to .mol2 using open babel
     print("PLANTS preprocessing is running ...\n\t Converting to Mol2")
     for file in [protein_file, molecules_library, ref_file]:

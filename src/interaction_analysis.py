@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from PIL import Image
-from plipify.core import Structure
-from plipify.fingerprints import InteractionFingerprint
-from plipify.visualization import fingerprint_barplot
+from software.plipify.plipify.core import Structure
+from software.plipify.plipify.fingerprints import InteractionFingerprint
+from software.plipify.plipify.visualization import fingerprint_barplot
 from pymol import cmd
 from rdkit import Chem
 from rdkit.Chem import AllChem, PandasTools
@@ -21,23 +21,19 @@ def plipify_ligand_protein_interaction(
         protein_path,
         protein_name,
         chains,
-        output_file):
+        image_output):
     '''
     This function loads ligands and protein using pymol script commands and save both protein and ligand as a complex as pdb file.
     It splits Chain C and D to separate pdb file and change ligand according to chain.
 
-    Parameters:
-    ------------
-    ligands_path: single ligand path or multiple ligand paths in a list
-    protein_path: path to protein in pdb format
-    protein_name: name of protein
-    chains: list of chains to split
-    method: single or multiple PLIPify visualization, if single give a single sdf structure as a path, 
-            if multiple give a list of sdf paths
-
+    Args:
+        ligands_path: single ligand path or multiple ligand paths in a list
+        protein_path: path to protein in pdb format
+        protein_name: name of protein
+        chains: list of chains to split
+        image_output: path of the output image
     Returns:
-    ------------
-    dict of all interactions
+        mol_interx_fp: Dict of all interactions
     '''
     if isinstance(ligands_path, Path):
         ligand_pdb_paths = [sdf2pdb_preprocessing(ligands_path)]
@@ -48,7 +44,7 @@ def plipify_ligand_protein_interaction(
             for ligand_pdb in ligand_pdb_paths
         ]
         fp_focused = interaction_fp_generator(
-            ligand_protein_cpx_paths, output_file)
+            ligand_protein_cpx_paths, image_output)
         return fp_focused
     else:
         raise ValueError("No sdf files found")
@@ -89,11 +85,11 @@ def plipify_ligand_protein_interaction(
     return mol_interx_fp
 
 
-def interaction_fp_generator(complex_path, output_path):
+def interaction_fp_generator(complex_path, image_output):
     # complex_files = list(Path(ligands_path / "ligand_protein_complex").glob(f"*{chain}.pdb"))
 
-    if os.path.exists(output_path):
-        print(f'Fingerprint Interactions are already saved in {output_path}')
+    if os.path.exists(image_output):
+        print(f'Fingerprint Interactions are already saved in png {image_output}')
         return
 
     structures = [
@@ -116,7 +112,7 @@ def interaction_fp_generator(complex_path, output_path):
     fp_focused = fp[fp.sum(axis=1) > len(complex_path) // 10]
 
     fig = (fingerprint_barplot(fp_focused))
-    fig.write_image(output_path)
+    fig.write_image(image_output)
 
     return fp_focused
 

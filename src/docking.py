@@ -221,7 +221,6 @@ def smina_docking(
 
     # Rename ID column
     df = PandasTools.LoadSDF(str(sdf_output))
-    print(df)
     if df is None:
         print("Invalid generated poses.")
         return None
@@ -414,7 +413,6 @@ def diffdock_docking(
             protein_file.parent) and local_diffdock:
         extract_binding_pocket(
             protein_file,
-            ref_file,
             protein_file.parent /
             pocket_res_indices)
     else:
@@ -427,7 +425,7 @@ def diffdock_docking(
             f"python -m inference"
             f" --protein_path {str(protein_file)}"
             f" --ligand '{smiles}'"
-            f" --complex_name results/local_diffdock/{id}"
+            f" --complex_name results/diffdock/{id}"
             f" --out_dir {str(protein_file.parent)}"
             f" --inference_steps 20"
             f" --samples_per_complex {n_poses}"
@@ -435,30 +433,29 @@ def diffdock_docking(
             f" --actual_steps 18"
             f" --no_final_step_noise"
         )
-        if os.path.exists(sdf_output) or os.path.exists(
-                sdf_output.parent / 'local_diffdock_poses.sdf'):
-            print('Poses are already generated using DiffDock/Local DiffDock')
+        # check for all poses
+        if (sdf_output / 'diffdock_poses.sdf').exists():
+            print('Poses are already generated using DiffDock / Local DiffDock')
             break
         if local_diffdock:
             diffdock_cmd += f" --binding_site_residues {str(protein_file.parent / pocket_res_indices)}"
-
+        # Check for each molecule if it is already docked
         if sdf_output.name in os.listdir(sdf_output.parent):
-            print(f"Compounds are already docked with DiffDock")
-            continue
-        if id not in os.listdir(sdf_output.parent):
-            os.chdir(os.getcwd() + '/software/DiffDock')
-            start_time = time.time()
-            run_command(diffdock_cmd)
-            end_time = time.time()    # End time
-
-            duration = end_time - start_time
-            print(f"\n\nThe diffdock took {duration} seconds to run.")
-            os.chdir(os.path.join(os.getcwd(), '..', '..'))
-        else:
             print(f"Compound {id} is already docked with DiffDock")
+            continue
 
+        os.chdir(os.getcwd() + '/software/DiffDock')
+        #start_time = time.time()
+        run_command(diffdock_cmd)
+        #end_time = time.time()    # End time
+        print(diffdock_cmd)
+        #duration = end_time - start_time
+        #print(f"\n\nThe diffdock took {duration} seconds to run.")
+        os.chdir(os.path.join(os.getcwd(), '..', '..'))
+
+    if (sdf_output / 'diffdock_poses.sdf').exists():
+        return
     reading_diffdock_poses(sdf_output, n_poses, local_diffdock)
-    # concatenate all poses in one dataframe
 
 
 def reading_diffdock_poses(sdf_output : Path, n_poses : int, local_diffdock : bool) -> None:
@@ -473,6 +470,8 @@ def reading_diffdock_poses(sdf_output : Path, n_poses : int, local_diffdock : bo
     '''
     diffdock_type = 'diffdock'
     if local_diffdock:
+        # rename sdf_output.parent to local_diffdock
+
         diffdock_type = 'localdiffdock'
     list_molecules = os.listdir(str(sdf_output.parent))
     df = pd.DataFrame(columns=['ID', 'molecules', 'confidence_score'])
@@ -560,7 +559,6 @@ def flexx_docking(
         f" -i {str(current_library)}"
         f" --max-nof-conf {str(n_poses)}"
         f" -o {str(sdf_output)}"
-
     )
     if sdf_output.name not in os.listdir(sdf_output.parent):
         try:

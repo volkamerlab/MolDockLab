@@ -1,50 +1,22 @@
 from src.consensus_rank import *
-from itertools import combinations, product
 from multiprocessing import cpu_count
 import concurrent.futures
 from pathlib import Path
 import os
 from scipy.stats import spearmanr
-from sklearn.preprocessing import RobustScaler
-
+from src.utilities import split_list, workflow_combinations
 # Calculate Spearman correlation
 
-def split_list(input_list, num_splits):
-    '''
-    Split a list into n parts.
-    Args:
-        input_list: list to be split
-        num_splits: number of splits
-    Returns: 
-        list of splitted lists
-    '''
-    avg_size = len(input_list) // num_splits
-    remain = len(input_list) % num_splits
-    partitions = []
-    i = 0
-    for _ in range(num_splits):
-        partition_size = avg_size + 1 if remain > 0 else avg_size
-        partitions.append(input_list[i:i+partition_size])
-        i += partition_size
-        remain -= 1
-        # print(len(partitions[-1]))
-    return partitions
-def all_combinations(docking_programs: list, rescoring_programs: list):
-    """
-    Generate all combinations of docking methods and scoring functions.
-    Args:
-        docking_programs: list of docking methods
-        rescoring_programs: list of rescoring programs
-    Returns: 
-               list of tuples with all combinations of docking methods and scoring functions
-    """
-    all_comb_scoring_function = [item for r in range(1, len(rescoring_programs) + 1) 
-                                 for item in combinations(sorted(rescoring_programs), r)]
-    all_comb_docking_program = [item for r in range(1, len(docking_programs) + 1) 
-                                 for item in combinations(sorted(docking_programs), r)]
-
-    return list(product(all_comb_docking_program, all_comb_scoring_function))
 def runtime_cost_calculation(docking_tools, scoring_functions, num_poses=10) -> float:
+        """
+        Calculate the cost of running a pipeline according to the time it takes to run each tool for ECF-T target
+        Args:
+                docking_tools: list of docking tools
+                scoring_functions: list of scoring functions
+                num_poses: number of poses
+        Returns:
+                float: cost of running the pipeline
+        """
         runtime_per_tool = {
                 'gnina': 105.80,
                 'plants': 6.82,
@@ -79,6 +51,14 @@ def enrichment_factor_calc(df, percent=1, activity_class='activity_class'):
     included_rows = round(percent / 100 * df.shape[0])
     if included_rows == 0:
         return included_rows
+    
+    df_copy = df.copy()
+    
+    for column in df_copy.columns:
+        try:
+                df_copy[column] = pd.to_numeric(df_copy[column])
+        except ValueError:
+                pass
     df_copy = df.copy().apply(pd.to_numeric, errors='ignore')
     actives_in_percent = np.sum(df_copy.head(included_rows)[activity_class])
     quotient = actives_in_percent / included_rows
@@ -141,9 +121,9 @@ def process_combination(
                         if ranking_method == 'weighted_ECR':
                                df_rank = method9_weighted_ECR_best(
                                       filtered_df.copy(),
-                                      list(comb[1]), 
+                                      mapped_weights=weights,
+                                      selected_scores=list(comb[1]), 
                                       id_column='ID', 
-                                      mapped_weights=weights
                                       )
                         else:
                                 df_rank = ranking_methods_dict[ranking_method](filtered_df.copy(), 0.05, list(comb[1]), id_column='ID')
@@ -154,11 +134,14 @@ def process_combination(
                         print(f"Error occurred: {err}")
 
                 try:
-                        df_rank_copy = df_rank.copy().apply(
-                        pd.to_numeric, 
-                        errors='ignore'
-                        ).dropna().merge(
-                                filtered_df[['ID', 'true_value', 'activity_class','id']], 
+                        df_rank_copy = df_rank.copy()
+    
+                        for column in df_rank_copy.columns:
+                                try:
+                                        df_rank_copy[column] = pd.to_numeric(df_rank_copy[column])
+                                except ValueError:
+                                        pass
+                        df_rank_copy = df_rank_copy.dropna().merge(filtered_df[['ID', 'true_value', 'activity_class','id']], 
                                 on='ID', 
                                 how='inner'
                                 )
@@ -170,8 +153,6 @@ def process_combination(
                         subset=['id']
                         )
                 except (RuntimeError, TypeError, NameError, pd.errors.MergeError, KeyError) as err:
-
-                     
                         print(f"Error occurred: {err}")
 
                 # assert np.isclose(df_rank_copy[df_rank_copy.id == 'HIPS314'].true_value.iloc[0], 0.299342), "merging with wrong columns, ABORT!"
@@ -222,14 +203,13 @@ def poses_ranking(
                 Write the results of every ranking method to a big csv file and concat all the results to a big csv file
         """
         ncpus = cpu_count()
-
         df_rescored[['ID', 'docking_tool', 'pose']] = df_rescored['ID'].str.split('_', expand=True)
         df_rescored = df_rescored[df_rescored['docking_tool'].notna()]
         docking_programs = list(df_rescored['docking_tool'].unique())
         print(f'Number of docking programs: {len(docking_programs)}, {docking_programs}')
         rescoring_methods = [col for col in df_rescored.columns if col not in ['ID', 'id', 'pose', 'docking_tool', 'true_value', 'activity_class']]
         print(f'Number of rescoring methods: {len(rescoring_methods)}, {rescoring_methods}')
-        all_comb = all_combinations(docking_programs, rescoring_methods)
+        all_comb = workflow_combinations(docking_programs, rescoring_methods)
         print(
         f'Number of possible combinations for every ranking method: {len(all_comb)}'
         f'\n With total combinations : {len(all_comb) * len(ranking_methods)}'
@@ -262,67 +242,19 @@ def poses_ranking(
                         ]
         #concatenate all the results
                 df = pd.concat([pd.read_csv(str(corr_file_path / f'{ranking_method}_parallel_{i}.csv')) for i in range(ncpus)])
+                # sort the results by spearman correlation
+                df.sort_values(by='spearman_correlation', ascending=False, inplace=True)
                 df.to_csv(str(corr_file_path / f'{ranking_method}_concat.csv'), index=False)
                 #delete the splitted files
                 for i in range(ncpus):
                         os.remove(str(corr_file_path / f'{ranking_method}_parallel_{i}.csv'))
                 print(f'Finished {ranking_method}...')
+
         #concatenate all the results
         if not os.path.exists(str(corr_file_path / 'all_ranked.csv')):
-                df = pd.concat([pd.read_csv(str(corr_file_path / f'{ranking_method}_concat.csv')) for ranking_method in ranking_methods]).apply(pd.to_numeric, errors='ignore')
+                df = pd.concat([pd.read_csv(str(corr_file_path / f'{ranking_method}_concat.csv')) for ranking_method in ranking_methods])
+
                 [os.remove(str(corr_file_path / f'{ranking_method}_concat.csv')) for ranking_method in ranking_methods]
                 df.sort_values(by='spearman_correlation', ascending=False, inplace=True)
                 df.to_csv(str(corr_file_path / 'all_ranked.csv'), index=False)
 
-def norm_scores(
-    df,
-    inversed_sf_cols=[
-        'smina_affinity',
-        'ad4',
-        'LinF9',
-        'Vinardo',
-        'CHEMPLP',
-        'HYDE',
-        'vina_hydrophobic',
-        'vina_intra_hydrophobic'],
-) -> pd.DataFrame:
-    """
-    Normalize a DataFrame that has an ID in the first column numerical values of scoring functions.
-    Certain specified columns will have their scaling inversed ('the lower the better').
-
-    Args:
-            df (pd.DataFrame): The DataFrame to normalize.
-            inversed_sf_cols (List): List of scoring functions that in ascending order (The lower the better)
-
-    Returns:
-            pd.DataFrame: The normalized DataFrame.
-    """
-    df_copy = df.copy()
-
-    numeric_cols = df_copy.select_dtypes(include=[np.number]).columns
-
-    for col in inversed_sf_cols:
-        if col not in df.columns:
-            continue
-        if col == 'HYDE':
-            hyde_ranks = df_copy.loc[:, col].rank(ascending=False)
-            df_copy.loc[:, col] = df_copy.loc[:, col].apply(
-                lambda x: min(x, 10000)) + hyde_ranks
-        min_value = df_copy.loc[:, col].min()
-
-        # Shift data to be positive and invert the scale
-        df.loc[:, col] = df_copy.loc[:, col] - min_value + 1
-        max_value = df_copy.loc[:, col].max()
-        df_copy.loc[:, col] = max_value + 1 - df[col]
-
-    scaler = RobustScaler(quantile_range=(5, 95))
-    # scaler = MinMaxScaler()
-
-    scaled_numeric = scaler.fit_transform(df_copy[numeric_cols])
-    scaled_numeric_df = pd.DataFrame(
-        scaled_numeric,
-        columns=numeric_cols,
-        index=df_copy.index)
-    df_copy.update(scaled_numeric_df)
-
-    return df_copy

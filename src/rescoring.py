@@ -4,6 +4,7 @@ import os
 # from software.RTMScore.rtmscore_modified import *
 import subprocess
 import time
+import shutil
 from concurrent.futures import ProcessPoolExecutor
 
 import pandas as pd
@@ -99,7 +100,10 @@ def rescoring_function(
         read_rescoring_results(results_folder, program)
 
     merge_rescoring_results(results_folder, rescore_programs)
-
+    # remove splitted file
+    shutil.rmtree(splitted_file_paths[0].parent)    
+    # clean the rescoring results
+    clean_rescoring_results(rescore_programs, results_folder)
 
 def ad4_rescoring(
         protein_file,
@@ -375,7 +379,7 @@ def rtmscore_rescoring(
     if not os.path.exists(RTMScore_pocket):
         print('Pocket is not found, generating the pocket first and rescore')
         return (
-            f'python software/RTMScore/rtmscore.py'
+            f'python software/RTMScore/example/rtmscore.py'
             f' -p {str(protein_file)}'
             f' -l {str(docked_library_path)}'
             f' -rl {str(ref_file)}'
@@ -385,7 +389,7 @@ def rtmscore_rescoring(
             ' -m software/RTMScore/trained_models/rtmscore_model1.pth'
         )
     return (
-        f'python software/RTMScore/rtmscore.py'
+        f'python software/RTMScore/example/rtmscore.py'
         f' -p {str(RTMScore_pocket)}'
         f' -l {str(docked_library_path)}'
         f' -o {str(output_path.parent / f"rtmscore_{number_of_ligand}")}'
@@ -649,7 +653,14 @@ def read_sdf_values_and_names(sdf_file_path):
 def read_rescoring_results(
         rescoring_results_path,
         rescore_program
-):
+        ):
+    """
+    This function reads the rescoring results and saves them as csv files
+    Args:
+        rescoring_results_path (str): The path to the rescoring results
+    Returns:
+        Saved rescoring results in the rescoring directory as csv file
+    """
     dfs = []
     print('\n\nReading rescoring results ⌛ ...\n\n')
 
@@ -657,22 +668,6 @@ def read_rescoring_results(
             rescoring_results_path):
         print(f'{rescore_program} is already read')
         return
-
-    # if 'cnnscore' == rescore_program:
-    #     for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
-    #         df = PandasTools.LoadSDF(str(sdf))[['ID', 'CNNscore']]
-    #         dfs.append(df)
-
-    # if 'cnnaffinity' == rescore_program:
-    #     for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
-    #         df = PandasTools.LoadSDF(str(sdf))[['ID', 'CNNaffinity']]
-    #         dfs.append(df)
-
-    # if 'smina_affinity' == rescore_program:
-    #     for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
-    #         df = PandasTools.LoadSDF(str(sdf))[['ID', 'minimizedAffinity']]
-    #         df.rename(columns={'minimizedAffinity': 'smina_affinity'}, inplace=True)
-    #         dfs.append(df)
 
     if rescore_program in ['cnnscore', 'cnnaffinity', 'smina_affinity']:
         for path in ['cnnscore', 'cnnaffinity', 'smina_affinity']:
@@ -809,13 +804,20 @@ def read_rescoring_results(
         rescore_program /
         f'{rescore_program}_rescoring.csv',
         index=False)
-    # return merged_df
 
 
 def merge_rescoring_results(
         rescoring_results_path,
         rescore_programs
 ):
+    """
+    This function is to merge the rescoring results. It takes the following arguments:
+    Args:
+        rescoring_results_path (str): The path to the rescoring results
+        rescore_programs (list): The list of rescoring programs to be used
+    Returns:
+        Merged rescoring results in csv file
+    """
     all_rescoring_dfs = []
     for rescore_program in rescore_programs:
         if f'{rescore_program}_rescoring.csv' in os.listdir(
@@ -842,3 +844,21 @@ def merge_rescoring_results(
         index=False)
 
     return merged_df
+
+def clean_rescoring_results(rescore_programs, rescoring_results_path):
+    """
+    This function is to clean the rescoring results. It takes the following arguments:
+    Args:
+        rescore_programs (list): The list of rescoring programs to be used
+        rescoring_results_path (str): The path to the rescoring results
+    Returns:
+        Cleaned rescoring results
+    """
+    for program in rescore_programs:
+        for file in os.listdir(rescoring_results_path / program):
+            if file != f'{program}_rescoring.csv':
+                # if file then os.remove and if dir then shutil.rmtree
+                if os.path.isdir(rescoring_results_path / program / file):
+                    shutil.rmtree(rescoring_results_path / program / file)
+                else:
+                    os.remove(rescoring_results_path / program / file)

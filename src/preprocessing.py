@@ -7,13 +7,13 @@ import sklearn.model_selection as skl_model_sel
 from rdkit import Chem
 from rdkit.Chem import AllChem, PandasTools
 from rdkit.Chem.Scaffolds import MurckoScaffold
+from sklearn.preprocessing import RobustScaler
 
 from pathlib import Path
-from src.ranking import norm_scores
 from src.utilities import handling_multicollinearity, run_command
 
 
-def merge_activity_values(
+def  merge_activity_values(
     norm_scored_path : Path,
     true_value_path : Path,
     true_value_col : str,
@@ -39,9 +39,12 @@ def merge_activity_values(
         additionally it contains the number of poses and docking tools
     """
     df_rescored = pd.read_csv(
-        str(norm_scored_path)).apply(
-        pd.to_numeric,
-        errors='ignore')
+        str(norm_scored_path))
+    for col in df_rescored.columns:
+        try:
+            df_rescored[col] = pd.to_numeric(df_rescored[col])
+        except:
+            continue
     df_rescored[['id', 'docking_tool', 'pose']
                 ] = df_rescored[scored_id_col].str.split('_', expand=True)
     true_values_df = PandasTools.LoadSDF(str(true_value_path))
@@ -69,12 +72,11 @@ def merge_activity_values(
         true_value_col='true_value'
     )
 
-    not_collinear_df.to_csv(str(norm_scored_path.parent /
-                                'all_rescoring_results_merged.csv'), index=False)
+    not_collinear_df.to_csv(str(norm_scored_path.parent / 'all_rescoring_results_merged.csv'), index=False)
     return df_rescored
 
 
-def get_scaffold(mol : rdkit.Chem.Mol) -> rdkit.Chem.rdchem.Mol:
+def get_scaffold(mol : Chem.Mol) ->Chem.rdchem.Mol:
     """
     Get the Murcko scaffold of a molecule
     Args:
@@ -85,7 +87,7 @@ def get_scaffold(mol : rdkit.Chem.Mol) -> rdkit.Chem.rdchem.Mol:
     return MurckoScaffold.GetScaffoldForMol(mol)
 
 
-def get_fp(scaffold : rdkit.Chem.Mol) -> np.ndarray:
+def get_fp(scaffold : Chem.Mol) -> np.ndarray:
     """
     Get the Morgan fingerprint of a molecule
     Args:
@@ -105,7 +107,7 @@ def get_cluster_labels(scaffold_fps : list, min_cluster_size : int=2) -> np.ndar
     Args:
         scaffold_fps (list) : list of Morgan fingerprints
         min_cluster_size (int) : minimum number of molecules in a cluster
-    Return:
+    Returns:
         numpy.ndarray : array of cluster labels
     """
 
@@ -121,8 +123,8 @@ def hdbscan_scaffold_split(original_data_path : Path, min_cluster_size : int) ->
     Args:
         original_data_path (pathlib.Path) : path of the original dataset in SDF format
         min_cluster_size (int) : minimum number of molecules in a cluster
-    Return:
-        DataFrame : DataFrame with the original dataset and the cluster labels
+    Returns:
+        Dataframe : DataFrame with the original dataset and the cluster labels
     """
 
     df = PandasTools.LoadSDF(str(original_data_path))
@@ -212,3 +214,55 @@ def plants_preprocessing(
 
     return protein_file.with_suffix(".mol2"), molecules_library.with_suffix(
         ".mol2"), ref_file.with_suffix(".mol2")
+
+def norm_scores(
+    df,
+    inversed_sf_cols=[
+        'smina_affinity',
+        'ad4',
+        'LinF9',
+        'Vinardo',
+        'CHEMPLP',
+        'HYDE',
+        'vina_hydrophobic',
+        'vina_intra_hydrophobic'
+        ],
+) -> pd.DataFrame:
+    """
+    Normalize a DataFrame that has an ID in the first column numerical values of scoring functions.
+    Certain specified columns will have their scaling inversed ('the lower the better').
+
+    Args:
+            df (pd.DataFrame): The DataFrame to normalize.
+            inversed_sf_cols (List): List of scoring functions that in ascending order (The lower the better)
+
+    Returns:
+            pd.DataFrame: The normalized DataFrame.
+    """
+    df_copy = df.copy()
+
+    numeric_cols = df_copy.select_dtypes(include=[np.number]).columns
+
+    for col in inversed_sf_cols:
+        if col not in df.columns:
+            continue
+        if col == 'HYDE':
+            hyde_ranks = df_copy.loc[:, col].rank(ascending=False)
+            df_copy.loc[:, col] = df_copy.loc[:, col].apply(
+                lambda x: min(x, 10000)) + hyde_ranks
+        min_value = df_copy.loc[:, col].min()
+
+        # Shift data to be positive and invert the scale
+        df.loc[:, col] = df_copy.loc[:, col] - min_value + 1
+        max_value = df_copy.loc[:, col].max()
+        df_copy.loc[:, col] = max_value + 1 - df[col]
+
+    scaler = RobustScaler(quantile_range=(5, 95))
+    scaled_numeric = scaler.fit_transform(df_copy[numeric_cols])
+    scaled_numeric_df = pd.DataFrame(
+        scaled_numeric,
+        columns=numeric_cols,
+        index=df_copy.index)
+    df_copy.update(scaled_numeric_df)
+
+    return df_copy

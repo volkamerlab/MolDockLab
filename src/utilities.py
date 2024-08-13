@@ -8,6 +8,7 @@ from Bio import SeqIO
 from Bio.Data import IUPACData
 from Bio.PDB import PDBParser
 from rdkit import Chem
+from itertools import combinations, product
 
 
 def run_command(cmd):
@@ -15,8 +16,8 @@ def run_command(cmd):
     try:
         subprocess.call(cmd,
                         shell=True,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.STDOUT
+                        #stdout=subprocess.DEVNULL,
+                        #stderr=subprocess.STDOUT
                         )
     except Exception as e:
         print(e)
@@ -26,9 +27,11 @@ def run_command(cmd):
 
 def get_ligand_coordinates_centers(ligand_molecule):
     '''This function returns the center of the ligand molecule in x, y and z coordinates
-    @param ligand_molecule: ligand molecule in pdb or sdf format
+    Args:
+        ligand_molecule: ligand molecule in pdb or sdf format
 
-    @return: center of the ligand molecule in x, y and z coordinates
+    Returns: 
+        center of the ligand molecule in x, y and z coordinates
     '''
     if ligand_molecule.endswith('.sdf'):
         supplier = Chem.SDMolSupplier(
@@ -76,7 +79,7 @@ def pocket_coordinates_generation(
         ref_file_mol2: reference file in mol2 format
         pocket_coordinates_path: path to the pocket coordinates file
 
-    Return:
+    Returns:
         center_x: x coordinate of the pocket center
         center_y: y coordinate of the pocket center
         center_z: z coordinate of the pocket center
@@ -103,9 +106,11 @@ def pdb2resname_resno(input_file):
     '''
     This function extracts the residue name and residue number from the protein file and returns a list of tuples of resname and resnumber
 
-    @param input_file: protein file in pdb format
+    Args:
+        input_file: protein file in pdb format
 
-    @return: a list of tuples of chain_ID, resname and resnumber
+    Returns: 
+        a list of tuples of chain_ID, resname and resnumber
     '''
 
     resname_resnumbers = []
@@ -125,22 +130,27 @@ def pdb2resname_resno(input_file):
     return (resname_resnumbers)
 
 
-def extract_binding_pocket(protein_file, ref_file, output_file):
+def extract_binding_pocket(protein_file, output_file):
     '''
-    This function extracts the binding pocket residues from the protein file
-    and writes the residue number to a csv file which is suitable more for local diffdock
+    This function extracts the binding pocket residue indices from the protein file
+    using the binding pocket and writes the residue number to a csv file which is suitable more for local diffdock
 
+    Binding pocket file has to be named  the same as the protein file with the suffix '_pocket.pdb'
+    
     Args:
         protein_file: protein file in pdb format
-        ref_file: reference file in pdb format
         output_file: output file in csv format
 
-    Return:
+    Returns:
       csv file with residue numbers of binding pocket residues in results folder
     '''
-
-    whole = pdb2resname_resno(str(protein_file))
-    ref = pdb2resname_resno(str(ref_file))
+    binding_pocket = protein_file.with_name(protein_file.stem + '_pocket.pdb')
+    if binding_pocket.exists():
+        whole = pdb2resname_resno(str(protein_file))
+        ref = pdb2resname_resno(str(binding_pocket))
+    else:
+        print('Binding pocket file does not exist. Please provide a binding pocket file')
+        return
 
     indices_dict = {element: [] for element in ref}
 
@@ -148,13 +158,15 @@ def extract_binding_pocket(protein_file, ref_file, output_file):
         if element in indices_dict:
             indices_dict[element] = (whole.index(element))
 
-    # print(indices_dict)
     with open(str(output_file), 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        # Write each item in the list to the CSV as a separate row
-        for key, item in indices_dict.items():
-            writer.writerow([item])
-
+        # Combine all items in the dictionary values into a single row
+        row = []
+        for _, item in indices_dict.items():
+            row.append(item)
+        
+        # Write the single row to the CSV file
+        writer.writerow(row)
 
 def any_in_list(list1, list2):
     return any(i in list2 for i in list1)
@@ -163,11 +175,12 @@ def any_in_list(list1, list2):
 def split_sdf(file_path, scoring_function, thread_num):
     """
     Split SDF file into chunks
-    @Params:
-    file_path: Path to SDF file
-    thread_num: Number of threads to split the file into
+    Args:
+        file_path: Path to SDF file
+        thread_num: Number of threads to split the file into
 
-    @Return: List of paths to splitted files
+    Returns: 
+        List of paths to splitted files
     """
     # @ TODO : Convert splitted to pdbqt format in case of CHEMPLP and SCORCH
 
@@ -218,15 +231,14 @@ def pdb_converter(
     protein_file,
     rescore_programs,
 ):
-    '''''
+    '''
     The function converts the protein file to pdbqt format in case of SCORCH SF
     and to mol2 format in case of CHEMPLP SF
 
-    @param protein_file: protein file in pdb format
-    @param rescore_programs: list of rescoring programs
-
-    @return: None
-    '''''
+    Args: 
+        protein_file: protein file in pdb format
+        rescore_programs: list of rescoring programs
+    '''
     if "chemplp" in rescore_programs:
         if f'{protein_file.stem}.mol2' in os.listdir(protein_file.parent):
             print('protein is already converted to mol2')
@@ -246,7 +258,14 @@ def pdb_converter(
 
 
 def split_list(input_list, num_splits):
-    """Split a list into n equal parts."""
+    """
+    Split a list into a number of splits
+    Args:
+        input_list: List to split
+        num_splits: Number of splits
+    Returns:
+        partitions: List of partitions
+    """
     avg_size = len(input_list) // num_splits
     remain = len(input_list) % num_splits
     partitions = []
@@ -261,7 +280,13 @@ def split_list(input_list, num_splits):
 
 
 def read_posebusters_data(df):
-
+    """
+    Read the PoseBusters data and return the number of docked molecules for each docking tool and the number of failed molecules 
+    Args:
+        df: DataFrame of the PoseBusters data
+    Returns:
+        df_filtered: DataFrame with the number of docked molecules for each docking tool
+    """ 
     df[['original_id', 'docking_tool', 'pose']
        ] = df['molecule'].str.split('_', expand=True)
     # Group by the 'docking_tool' and sum the False values for every column.
@@ -295,19 +320,23 @@ def generate_correlation_matrix(df):
     Returns:
         correlation_matrix: Correlation matrix of the numerical columns
     """
-    df = df.apply(pd.to_numeric, errors='ignore')
+    for col in df.columns:
+        try:
+            df[col] = pd.to_numeric(df[col])
+        except:
+            continue
     correlation_matrix = df.select_dtypes('number').corr()
     return correlation_matrix
 
 
 def check_correlation_pairs(correlation_matrix, threshold=0.9):
     """
-    Check pairs of columns that have correlation of 0.9 or higher
+    Check pairs of columns that have correlation of a threshold, 0.9 is the default threshold
     Args:
         correlation_matrix: Correlation matrix of the numerical columns
         threshold: Threshold for correlation
     Returns:
-        pairs: List of pairs of columns that have correlation of 0.9 or higher
+        pairs: List of pairs of columns that have correlation of a threshold
     """
     pairs = []
     for i in range(correlation_matrix.shape[0]):
@@ -331,15 +360,13 @@ def handling_multicollinearity(df, threshold=0.9, true_value_col='true_value'):
     """
 
     corr_matrix = generate_correlation_matrix(df)
-
+    display(corr_matrix.style.background_gradient(cmap='coolwarm'))
     pairs = check_correlation_pairs(corr_matrix, threshold)
     columns_to_remove = set()
     for col1, col2 in pairs:
-        corr_with_true_value_col1 = df[col1].corr(
-            df[true_value_col], method='spearman')
-        corr_with_true_value_col2 = df[col2].corr(
-            df[true_value_col], method='spearman')
 
+        corr_with_true_value_col1 = corr_matrix.loc[true_value_col, col1]
+        corr_with_true_value_col2 = corr_matrix.loc[true_value_col, col2]
         if corr_with_true_value_col1 > corr_with_true_value_col2:
             columns_to_remove.add(col2)
         else:
@@ -347,3 +374,39 @@ def handling_multicollinearity(df, threshold=0.9, true_value_col='true_value'):
     print(f"Scores of {columns_to_remove} were found to highly correlate. Therefore, they are removed")
     df.drop(columns=list(columns_to_remove), inplace=True)
     return df
+
+def split_list(input_list, num_splits):
+    '''
+    Split a list into n parts.
+    Args:
+        input_list: list to be split
+        num_splits: number of splits
+    Returns: 
+        list of splitted lists
+    '''
+    avg_size = len(input_list) // num_splits
+    remain = len(input_list) % num_splits
+    partitions = []
+    i = 0
+    for _ in range(num_splits):
+        partition_size = avg_size + 1 if remain > 0 else avg_size
+        partitions.append(input_list[i:i+partition_size])
+        i += partition_size
+        remain -= 1
+        # print(len(partitions[-1]))
+    return partitions
+def workflow_combinations(docking_programs: list, rescoring_programs: list):
+    """
+    Generate all combinations of docking methods and scoring functions.
+    Args:
+        docking_programs: list of docking methods
+        rescoring_programs: list of rescoring programs
+    Returns: 
+               list of tuples with all combinations of docking methods and scoring functions
+    """
+    all_comb_scoring_function = [item for r in range(1, len(rescoring_programs) + 1) 
+                                 for item in combinations(sorted(rescoring_programs), r)]
+    all_comb_docking_program = [item for r in range(1, len(docking_programs) + 1) 
+                                 for item in combinations(sorted(docking_programs), r)]
+
+    return list(product(all_comb_docking_program, all_comb_scoring_function))

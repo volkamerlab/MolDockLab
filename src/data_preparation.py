@@ -42,7 +42,11 @@ def minimize_and_select_most_stable(row: pd.Series, numConfs: int = 10) -> pd.Da
     return new_row
 
 
-def run_gypsumdl(ligand_library: Path, prepared_library_path: Path, id_column : str ='ID') -> Path:
+def run_gypsumdl(
+        ligand_library: Path, 
+        prepared_library_path: Path, 
+        id_column : str ='ID'
+        ) -> Path:
     """
     Run gypsum_dl to generate 3D conformations of ligands
     Args:
@@ -54,7 +58,7 @@ def run_gypsumdl(ligand_library: Path, prepared_library_path: Path, id_column : 
     """
     ncpus = multiprocessing.cpu_count() - 2
     gypsum_dl_command = (
-        'python software/gypsum_dl-1.2.0/run_gypsum_dl.py'
+        'python software/gypsum_dl-1.2.1/run_gypsum_dl.py'
         f' -s {ligand_library}'
         f' -o {prepared_library_path.parent}'
         ' --job_manager multiprocessing'
@@ -101,10 +105,10 @@ def run_gypsumdl(ligand_library: Path, prepared_library_path: Path, id_column : 
             properties=cleaned_df.columns
         )
         os.remove(str(prepared_library_path.parent / 'gypsum_dl_success.sdf'))
-        os.remove(str(failed_file))
+        
 
-        if os.path.exists(
-                str(prepared_library_path.parent / 'gypsum_dl_failed.smi')):
+        if os.path.exists(str(failed_file)):
+            os.remove(str(failed_file))
             return prepared_library_path
     else:
-        print("Molecules are already prepared")
+        print("Molecules are already prepared by Gypsum-DL")

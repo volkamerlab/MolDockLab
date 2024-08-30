@@ -1,5 +1,6 @@
-import csv
 import os
+import ast
+import csv
 import subprocess
 from pathlib import Path
 
@@ -16,8 +17,8 @@ def run_command(cmd):
     try:
         subprocess.call(cmd,
                         shell=True,
-                        #stdout=subprocess.DEVNULL,
-                        #stderr=subprocess.STDOUT
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.STDOUT
                         )
     except Exception as e:
         print(e)
@@ -410,3 +411,22 @@ def workflow_combinations(docking_programs: list, rescoring_programs: list):
                                  for item in combinations(sorted(docking_programs), r)]
 
     return list(product(all_comb_docking_program, all_comb_scoring_function))
+def get_selected_workflow(row:int, corr_path:Path) -> tuple:
+    """
+    This function takes the row number and the path of the correlation file and returns the selected docking tools, scoring tools and ranking method
+    
+    Args:
+        row: int: the row number of the dataframe
+        corr_path: Path: the path of the correlation file
+
+    Returns:
+        docking_tools: list: the selected docking tools
+        scoring_tools: list: the selected scoring tools
+        ranking_method: str: the selected ranking method
+    """
+    df = pd.read_csv(corr_path)
+    docking_tools = df.iloc[row]['docking_tool']
+    scoring_tools = df.iloc[row]['scoring_function']
+    ranking_method = df.iloc[row]['ranking_method']
+    
+    return ast.literal_eval(docking_tools), ast.literal_eval(scoring_tools), ranking_method

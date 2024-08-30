@@ -56,7 +56,7 @@ def run_gypsumdl(
     Return: 
         Path to output file
     """
-    ncpus = multiprocessing.cpu_count() - 2
+    ncpus = multiprocessing.cpu_count() - 1
     gypsum_dl_command = (
         'python software/gypsum_dl-1.2.1/run_gypsum_dl.py'
         f' -s {ligand_library}'
@@ -71,8 +71,7 @@ def run_gypsumdl(
         ' --max_variants_per_compound 1'
     )
 
-    if prepared_library_path.name not in os.listdir(
-            str(prepared_library_path.parent)):
+    if prepared_library_path.name not in os.listdir(str(prepared_library_path.parent)):
         os.system(gypsum_dl_command)
 
         # Clean output data (Remove the first row) and remove old one

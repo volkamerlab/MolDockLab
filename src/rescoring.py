@@ -6,7 +6,7 @@ import subprocess
 import time
 import shutil
 from concurrent.futures import ProcessPoolExecutor
-
+from pathlib import Path
 import pandas as pd
 from rdkit.Chem import PandasTools
 
@@ -16,11 +16,11 @@ from src.utilities import (any_in_list, pdb_converter,
 
 
 def rescoring_function(
-    rescore_programs,
-    protein_file,
-    docked_library_path,
-    ref_file,
-    ncpu
+    rescore_programs: list,
+    protein_file: Path,
+    docked_library_path: Path,
+    ref_file: Path,
+    ncpu: int
 ):
     """
     This function is the high-level function to deploy all scoring functions. It takes the following arguments:
@@ -43,9 +43,9 @@ def rescoring_function(
         'vina_hydrophobic': vina_hydrophobic_rescoring,
         'vina_intra_hydrophobic': vina_intra_hydrophobic_rescoring,
         'rtmscore': rtmscore_rescoring,
-        'rfscorevs_v1': rfscorevs_V1_rescoring,
-        'rfscorevs_v2': rfscorevs_V2_rescoring,
-        'rfscorevs_v3': rfscorevs_v3_rescoring,
+        'rfscore_v1': rfscore_V1_rescoring,
+        'rfscore_v2': rfscore_V2_rescoring,
+        'rfscore_v3': rfscore_v3_rescoring,
         'cnnscore': gnina_score_rescoring,
         'cnnaffinity': gnina_affinity_rescoring,
         'scorch': scorch_rescoring,
@@ -61,7 +61,7 @@ def rescoring_function(
     pdb_converter(ref_file, rescore_programs)
 
     for program in rescore_programs:
-
+        program = program.lower()
         splitted_file_paths = split_sdf(docked_library_path, program, num_cpus)
         output_folder = results_folder / program
         output_folder.mkdir(exist_ok=True)
@@ -224,7 +224,7 @@ def gnina_affinity_rescoring(
         f' --out {str(output_path)}'
         f' --autobox_ligand {str(ref_file)}'
         ' --score_only'
-        ' --cnn crossdock_default2018 --no_gpu'
+        ' --cnn crossdock_default2018'
     )
 
 
@@ -428,7 +428,7 @@ def scorch_rescoring(
     )
 
 
-def rfscorevs_V1_rescoring(
+def rfscore_V1_rescoring(
         protein_file,
         docked_library_path,
         ref_file,
@@ -485,7 +485,7 @@ def hyde_rescoring(
     )
 
 
-def rfscorevs_V2_rescoring(
+def rfscore_V2_rescoring(
         protein_file,
         docked_library_path,
         ref_file,
@@ -510,7 +510,7 @@ def rfscorevs_V2_rescoring(
     )
 
 
-def rfscorevs_v3_rescoring(
+def rfscore_v3_rescoring(
         protein_file,
         docked_library_path,
         ref_file,
@@ -714,19 +714,19 @@ def read_rescoring_results(
             df.rename(columns={'minimizedAffinity': 'Vinardo'}, inplace=True)
             dfs.append(df)
 
-    if 'rfscorevs_v1' == rescore_program:
+    if 'rfscore_v1' == rescore_program:
         for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
             df = read_sdf_values_and_names(sdf)[['ID', 'rfscore_v1']]
             # df.rename(columns={'minimizedAffinity': 'Vinardo'}, inplace=True)
             dfs.append(df)
 
-    if 'rfscorevs_v2' == rescore_program:
+    if 'rfscore_v2' == rescore_program:
         for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
             df = read_sdf_values_and_names(sdf)[['ID', 'rfscore_v2']]
             # df.rename(columns={'minimizedAffinity': 'Vinardo'}, inplace=True)
             dfs.append(df)
 
-    if 'rfscorevs_v3' == rescore_program:
+    if 'rfscore_v3' == rescore_program:
         for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
             df = read_sdf_values_and_names(sdf)[['ID', 'rfscore_v3']]
             # df.rename(columns={'minimizedAffinity': 'Vinardo'}, inplace=True)
@@ -820,6 +820,7 @@ def merge_rescoring_results(
     """
     all_rescoring_dfs = []
     for rescore_program in rescore_programs:
+        rescore_program = rescore_program.lower()
         if f'{rescore_program}_rescoring.csv' in os.listdir(
                 rescoring_results_path / rescore_program):
             df = pd.read_csv(
@@ -847,7 +848,7 @@ def merge_rescoring_results(
 
 def clean_rescoring_results(rescore_programs, rescoring_results_path):
     """
-    This function is to clean the rescoring results. It takes the following arguments:
+    This function is to remove unncessary files and dirs. It takes the following arguments:
     Args:
         rescore_programs (list): The list of rescoring programs to be used
         rescoring_results_path (str): The path to the rescoring results
@@ -855,6 +856,7 @@ def clean_rescoring_results(rescore_programs, rescoring_results_path):
         Cleaned rescoring results
     """
     for program in rescore_programs:
+        program = program.lower()
         for file in os.listdir(rescoring_results_path / program):
             if file != f'{program}_rescoring.csv':
                 # if file then os.remove and if dir then shutil.rmtree

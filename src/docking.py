@@ -19,7 +19,7 @@ from src.utilities import (
 def docking(
     docking_methods : list,
     protein_file : Path,
-    current_library : Path,
+    ligands_path : Path,
     ref_file : Path,
     exhaustiveness : int,
     n_poses : int,
@@ -34,7 +34,7 @@ def docking(
     Args:
         docking_methods (list): list of docking methods to be used
         protein_file (Path): path to the protein file in PDB format
-        current_library (Path): path to the library of ligands in SDF format
+        ligands_path (Path): path to the library of ligands in SDF format
         ref_file (Path): path to the reference ligand file in SDF format
         exhaustiveness (int): level of exhaustiveness for the docking search
         n_poses (int): number of poses to be generated
@@ -69,7 +69,7 @@ def docking(
         docking_dict[docking_method.lower()](
             protein_file=protein_file,
             sdf_output=output_file,
-            current_library=current_library,
+            ligands_path=ligands_path,
             ref_file=ref_file,
             exhaustiveness=exhaustiveness,
             n_poses=n_poses,
@@ -112,7 +112,7 @@ def docking(
 def _gnina_docking(
         protein_file : Path,
         sdf_output : Path,
-        current_library : Path,
+        ligands_path : Path,
         ref_file : Path,
         exhaustiveness : int,
         n_poses : int,
@@ -124,7 +124,7 @@ def _gnina_docking(
     Args:
         protein_file (Path): path to the protein file in PDB format
         sdf_output (Path): path to the output file in SDF format
-        current_library (Path): path to the library of ligands in SDF format
+        ligands_path (Path): path to the library of ligands in SDF format
         ref_file (Path): path to the reference ligand file in SDF format
         exhaustiveness (int): level of exhaustiveness for the docking search, ranges from 0-8
         n_poses (int): number of poses to be generated
@@ -132,7 +132,7 @@ def _gnina_docking(
     '''
     gnina_cmd = (
         f'./software/gnina -r {protein_file}'
-        f' -l {current_library}'
+        f' -l {ligands_path}'
         f' -o {sdf_output}'
         f' --autobox_ligand {str(ref_file)}'
         f' --seed 1637317264'
@@ -184,7 +184,7 @@ def _gnina_docking(
 def _smina_docking(
         protein_file : Path,
         sdf_output : Path,
-        current_library : Path,
+        ligands_path : Path,
         ref_file : Path,
         exhaustiveness : int,
         n_poses : int,
@@ -197,7 +197,7 @@ def _smina_docking(
     Args:
         protein_file (Path): path to the protein file in PDB format
         sdf_output (Path): path to the output file in SDF format
-        current_library (Path): path to the library of ligands in SDF format
+        ligands_path (Path): path to the library of ligands in SDF format
         ref_file (Path): path to the reference ligand file in SDF format
         exhaustiveness (int): level of exhaustiveness for the docking search, ranges from 0-8
         n_poses (int): number of poses to be generated
@@ -205,7 +205,7 @@ def _smina_docking(
     '''
     smina_cmd = (
         f'./software/gnina -r {protein_file}'
-        f' -l {current_library} -o {sdf_output}'
+        f' -l {ligands_path} -o {sdf_output}'
         f' --autobox_ligand {str(ref_file)}'
         ' --autobox_extend=1 --seed 1637317264'
         f' --exhaustiveness {exhaustiveness} --num_modes {str(n_poses)} --cnn_scoring=none'
@@ -254,7 +254,7 @@ def _smina_docking(
 def _plants_docking(
         protein_file : Path,
         sdf_output : Path,
-        current_library : Path,
+        ligands_path : Path,
         ref_file : Path,
         exhaustiveness : int,
         n_poses : int,
@@ -267,7 +267,7 @@ def _plants_docking(
     Args:
         protein_file (Path): path to the protein file in PDB format
         sdf_output (Path): path to the output file in SDF format
-        current_library (Path): path to the library of ligands in SDF format
+        ligands_path (Path): path to the library of ligands in SDF format
         ref_file (Path): path to the reference ligand file in SDF format
         exhaustiveness (int): level of exhaustiveness for the docking search, ranges from 0-8
         n_poses (int): number of poses to be generated
@@ -276,7 +276,7 @@ def _plants_docking(
     # convert to structure, ligands, reference ligand to mol2
     protein_mol2, mols_library_mol2, ref_ligand_mol2 = plants_preprocessing(
         protein_file, 
-        current_library, 
+        ligands_path, 
         ref_file
         )
     # get pocket coordinates
@@ -390,7 +390,7 @@ def _plants_docking(
 def _diffdock_docking(
         protein_file : Path,
         sdf_output : Path,
-        current_library : Path,
+        ligands_path : Path,
         ref_file : Path,
         exhaustiveness : int,
         n_poses : int,
@@ -403,14 +403,14 @@ def _diffdock_docking(
     Args:
         protein_file (Path): path to the protein file in PDB format
         sdf_output (Path): path to the output file in SDF format
-        current_library (Path): path to the library of ligands in SDF format
+        ligands_path (Path): path to the library of ligands in SDF format
         ref_file (Path): path to the reference ligand file in SDF format
         exhaustiveness (int): level of exhaustiveness for the docking search, ranges from 0-8
         n_poses (int): number of poses to be generated
         local_diffdock (bool): whether to use local DiffDock
     '''
 
-    library_df = PandasTools.LoadSDF(str(current_library))
+    library_df = PandasTools.LoadSDF(str(ligands_path))
     molecule_id = library_df['ID'].tolist()
     ligands = [Chem.MolToSmiles(mol) for mol in library_df['ROMol'].tolist()]
 
@@ -528,7 +528,7 @@ def _reading_diffdock_poses(sdf_output : Path, n_poses : int, local_diffdock : b
 def _flexx_docking(
         protein_file : Path,
         sdf_output : Path,
-        current_library : Path,
+        ligands_path : Path,
         ref_file : Path,
         exhaustiveness : int,
         n_poses : int,
@@ -541,7 +541,7 @@ def _flexx_docking(
     Args:
         protein_file (Path): path to the protein file in PDB format
         sdf_output (Path): path to the output file in SDF format
-        current_library (Path): path to the library of ligands in SDF format
+        ligands_path (Path): path to the library of ligands in SDF format
         ref_file (Path): path to the reference ligand file in SDF format
         exhaustiveness (int): level of exhaustiveness for the docking search, ranges from 0-8
         n_poses (int): number of poses to be generated
@@ -562,7 +562,7 @@ def _flexx_docking(
         f" --thread-count 8"
         f" -p {str(protein_file)}"
         f" --r {str(ref_file_sdf)}"
-        f" -i {str(current_library)}"
+        f" -i {str(ligands_path)}"
         f" --max-nof-conf {str(n_poses)}"
         f" -o {str(sdf_output)}"
     )

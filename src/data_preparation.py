@@ -6,7 +6,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem, PandasTools
 from pathlib import Path
 
-def minimize_and_select_most_stable(row: pd.Series, numConfs: int = 10) -> pd.DataFrame:
+def _minimize_and_select_most_stable(row: pd.Series, numConfs: int = 10) -> pd.DataFrame:
     """
     Minimize the energy of a molecule and select the most stable conformer
     Args:
@@ -91,7 +91,7 @@ def run_gypsumdl(
                 header=None,
                 names=["SMILES","ID"])
             for _, row in failed_cpds.iterrows():
-                failed_row = minimize_and_select_most_stable(row)
+                failed_row = _minimize_and_select_most_stable(row)
                 if failed_row.Molecule is not None:
                     cleaned_df = pd.concat(
                         [cleaned_df, failed_row], ignore_index=True)

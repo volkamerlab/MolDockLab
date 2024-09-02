@@ -16,8 +16,8 @@ from src.utilities import (any_in_list, pdb_converter,
 
 
 def rescoring_function(
-    rescore_programs: list,
-    protein_file: Path,
+    rescoring_programs: list,
+    protein_path: Path,
     docked_library_path: Path,
     ref_file: Path,
     ncpu: int
@@ -25,10 +25,11 @@ def rescoring_function(
     """
     This function is the high-level function to deploy all scoring functions. It takes the following arguments:
     Args:
-        rescore_programs (list): The list of rescoring programs to be used
-        protein_file (Path): The path to the protein file
+        rescoring_programs (list): The list of rescoring programs to be used
+        protein_path (Path): The path to the protein file
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
+        ncpu (int): The number of CPUs to use
     Returns:
         Saved rescoring results in the rescoring_results folder as csv file, besides the individual rescoring results in the rescoring_results folder
     """
@@ -57,10 +58,10 @@ def rescoring_function(
 
     # convert protein and ligand to mol2 and pdbqt format in case of CHEMPLP
     # and SCORCH respectively
-    pdb_converter(protein_file, rescore_programs)
-    pdb_converter(ref_file, rescore_programs)
+    pdb_converter(protein_path, rescoring_programs)
+    pdb_converter(ref_file, rescoring_programs)
 
-    for program in rescore_programs:
+    for program in rescoring_programs:
         program = program.lower()
         splitted_file_paths = split_sdf(docked_library_path, program, num_cpus)
         output_folder = results_folder / program
@@ -85,7 +86,7 @@ def rescoring_function(
                     executor.submit(
                         run_command,
                         rescoring_dict[program](
-                            protein_file,
+                            protein_path,
                             file_path,
                             ref_file,
                             output_folder / f'{program}_{i}.sdf'
@@ -99,12 +100,12 @@ def rescoring_function(
             print(f"\n\nThe {program} took {duration} seconds to run.")
         _read_rescoring_results(results_folder, program)
 
-    _merge_rescoring_results(results_folder, rescore_programs)
+    _merge_rescoring_results(results_folder, rescoring_programs)
     shutil.rmtree(splitted_file_paths[0].parent)    
-    _clean_rescoring_results(rescore_programs, results_folder)
+    _clean_rescoring_results(rescoring_programs, results_folder)
 
 def _ad4_rescoring(
-        protein_file: Path,
+        protein_path: Path,
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
@@ -112,7 +113,7 @@ def _ad4_rescoring(
     """
     This function for AD4 rescoring function and it takes the following arguments:
     Args:
-        protein_file (Path): The path to the protein file
+        protein_path (Path): The path to the protein file
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
         output_path (Path): The path to the output file
@@ -121,7 +122,7 @@ def _ad4_rescoring(
     """
     return (
         './software/gnina'
-        f' --receptor {protein_file}'
+        f' --receptor {protein_path}'
         f' --ligand {str(docked_library_path)}'
         f' --out {str(output_path)}'
         f' --autobox_ligand {str(ref_file)}'
@@ -131,7 +132,7 @@ def _ad4_rescoring(
 
 
 def _smina_rescoring(
-        protein_file: Path,
+        protein_path: Path,
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
@@ -139,7 +140,7 @@ def _smina_rescoring(
     """
     This function for SMINA rescoring function and it takes the following arguments:
     Args:
-        protein_file (Path): The path to the protein file
+        protein_path (Path): The path to the protein file
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
         output_path (Path): The path to the output file
@@ -154,7 +155,7 @@ def _smina_rescoring(
     else:
         return (
             './software/gnina'
-            f' --receptor {protein_file}'
+            f' --receptor {protein_path}'
             f' --ligand {str(docked_library_path)}'
             f' --out {str(output_path)}'
             f' --autobox_ligand {str(ref_file)}'
@@ -164,7 +165,7 @@ def _smina_rescoring(
 
 
 def _gnina_score_rescoring(
-        protein_file: Path,
+        protein_path: Path,
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
@@ -172,7 +173,7 @@ def _gnina_score_rescoring(
     """
     This function for the score of GNINA rescoring function and it takes the following arguments:
     Args:
-        protein_file (Path): The path to the protein file
+        protein_path (Path): The path to the protein file
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
         output_path (Path): The path to the output file
@@ -186,7 +187,7 @@ def _gnina_score_rescoring(
         return
     return (
         './software/gnina'
-        f' --receptor {str(protein_file)}'
+        f' --receptor {str(protein_path)}'
         f' --ligand {str(docked_library_path)}'
         f' --out {str(output_path)}'
         f' --autobox_ligand {str(ref_file)}'
@@ -196,7 +197,7 @@ def _gnina_score_rescoring(
 
 
 def _gnina_affinity_rescoring(
-        protein_file: Path,
+        protein_path: Path,
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
@@ -204,7 +205,7 @@ def _gnina_affinity_rescoring(
     """
     This function for GNINA rescoring function and it takes the following arguments:
     Args:
-        protein_file (Path): The path to the protein file
+        protein_path (Path): The path to the protein file
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
         output_path (Path): The path to the output file
@@ -217,7 +218,7 @@ def _gnina_affinity_rescoring(
         return
     return (
         './software/gnina'
-        f' --receptor {str(protein_file)}'
+        f' --receptor {str(protein_path)}'
         f' --ligand {str(docked_library_path)}'
         f' --out {str(output_path)}'
         f' --autobox_ligand {str(ref_file)}'
@@ -227,7 +228,7 @@ def _gnina_affinity_rescoring(
 
 
 def _vinardo_rescoring(
-        protein_file: Path,
+        protein_path: Path,
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
@@ -235,7 +236,7 @@ def _vinardo_rescoring(
     """
     This function for Vinardo rescoring function and it takes the following arguments:
     Args:
-        protein_file (Path): The path to the protein file
+        protein_path (Path): The path to the protein file
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
         output_path (Path): The path to the output file
@@ -244,7 +245,7 @@ def _vinardo_rescoring(
     """
     return (
         './software/gnina'
-        f' --receptor {protein_file}'
+        f' --receptor {protein_path}'
         f' --ligand {str(docked_library_path)}'
         f' --out {str(output_path)}'
         f' --autobox_ligand {str(ref_file)}'
@@ -254,7 +255,7 @@ def _vinardo_rescoring(
 
 
 def _chemplp_rescoring(
-        protein_file: Path,
+        protein_path: Path,
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
@@ -262,7 +263,7 @@ def _chemplp_rescoring(
     """
     This function for CHEMPLP rescoring function and it takes the following arguments:
     Args:
-        protein_file (Path): The path to the protein file
+        protein_path (Path): The path to the protein file
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
         output_path (Path): The path to the output file
@@ -273,7 +274,7 @@ def _chemplp_rescoring(
     ants = '20'
 
     protein_mol2, mols_library_mol2, ref_ligand_mol2 = plants_preprocessing(
-        protein_file, docked_library_path, ref_file)
+        protein_path, docked_library_path, ref_file)
     center_x, center_y, center_z, radius = pocket_coordinates_generation(
         protein_mol2, ref_ligand_mol2, pocket_coordinates_path='bindingsite.def')
     print(f"Center of the pocket is: {center_x}, {center_y}, {center_z} with radius of {radius}")
@@ -329,7 +330,7 @@ def _chemplp_rescoring(
 
 
 def _linf9_rescoring(
-        protein_file: Path,
+        protein_path: Path,
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
@@ -337,7 +338,7 @@ def _linf9_rescoring(
     """
     This function for LinF9 rescoring function and it takes the following arguments:
     Args:
-        protein_file (Path): The path to the protein file
+        protein_path (Path): The path to the protein file
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
         output_path (Path): The path to the output file
@@ -346,7 +347,7 @@ def _linf9_rescoring(
     """
     return (
         f'./software/smina.static'
-        f' --receptor {str(protein_file)}'
+        f' --receptor {str(protein_path)}'
         f' --ligand {str(docked_library_path)}'
         f' --out {str(output_path)}'
         f' --autobox_ligand {str(ref_file)}'
@@ -355,7 +356,7 @@ def _linf9_rescoring(
 
 
 def _rtmscore_rescoring(
-        protein_file: Path,
+        protein_path: Path,
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
@@ -363,21 +364,21 @@ def _rtmscore_rescoring(
     """
     This function for RTMScore rescoring function and it takes the following arguments:
     Args:
-        protein_file (Path): The path to the protein file
+        protein_path (Path): The path to the protein file
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
         output_path (Path): The path to the output file
     Returns:
         The command to run the RTMScore rescoring function
     """
-    RTMScore_pocket = str(protein_file).replace('.pdb', '_pocket.pdb')
+    RTMScore_pocket = str(protein_path).replace('.pdb', '_pocket.pdb')
     number_of_ligand = docked_library_path.stem.split('_')[-1]
     ref_file = str(ref_file).replace('.pdb', '.sdf')
     if not os.path.exists(RTMScore_pocket):
         print('Pocket is not found, generating the pocket first and rescore')
         return (
             f'python software/RTMScore/example/rtmscore.py'
-            f' -p {str(protein_file)}'
+            f' -p {str(protein_path)}'
             f' -l {str(docked_library_path)}'
             f' -rl {str(ref_file)}'
             f' -o {str(output_path.parent / f"rtmscore_{number_of_ligand}")}'
@@ -395,7 +396,7 @@ def _rtmscore_rescoring(
 
 
 def _scorch_rescoring(
-        protein_file: Path,
+        protein_path: Path,
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
@@ -403,20 +404,20 @@ def _scorch_rescoring(
     """
     This function for SCORCH rescoring function and it takes the following arguments:
     Args:
-        protein_file (Path): The path to the protein file
+        protein_path (Path): The path to the protein file
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
         output_path (Path): The path to the output file
     Returns:
         The command to run the SCORCH rescoring function
     """
-    protein_file_pdqbt = str(protein_file).replace('.pdb', '.pdbqt')
+    protein_path_pdqbt = str(protein_path).replace('.pdb', '.pdbqt')
     docked_library_file_pdqbt = str(
         docked_library_path).replace('.sdf', '.pdbqt')
     ref_ligand_pdqbt = str(ref_file).replace('.pdb', '.pdbqt')
     print(
         f'python software/SCORCH/scorch.py '
-        f' --receptor {str(protein_file_pdqbt)} '
+        f' --receptor {str(protein_path_pdqbt)} '
         f' --ligand {docked_library_file_pdqbt}'
         f" --ref_lig {str(ref_ligand_pdqbt)}"
         f' --out {str(output_path.parent / output_path.stem)}.csv'
@@ -425,7 +426,7 @@ def _scorch_rescoring(
     )
     return (
         f'python software/SCORCH/scorch.py '
-        f' --receptor {str(protein_file_pdqbt)} '
+        f' --receptor {str(protein_path_pdqbt)} '
         f' --ligand {docked_library_file_pdqbt}'
         f" --ref_lig {str(ref_ligand_pdqbt)}"
         f' --out {str(output_path.parent / output_path.stem)}.csv'
@@ -435,7 +436,7 @@ def _scorch_rescoring(
 
 
 def _rfscore_V1_rescoring(
-        protein_file: Path,
+        protein_path: Path,
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
@@ -443,7 +444,7 @@ def _rfscore_V1_rescoring(
     """
     This function for RFScore_ver1 rescoring function and it takes the following arguments:
     Args:
-        protein_file (Path): The path to the protein file
+        protein_path (Path): The path to the protein file
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
         output_path (Path): The path to the output file
@@ -452,7 +453,7 @@ def _rfscore_V1_rescoring(
     """
     return (
         f"oddt_cli {str(docked_library_path)}"
-        f' --receptor {str(protein_file)}'
+        f' --receptor {str(protein_path)}'
         f" --score rfscore_v1"
         f" -O {str(output_path)}"
         " -n 1"
@@ -460,7 +461,7 @@ def _rfscore_V1_rescoring(
 
 
 def _hyde_rescoring(
-        protein_file: Path,
+        protein_path: Path,
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
@@ -468,7 +469,7 @@ def _hyde_rescoring(
     """
     This function for HYDE rescoring function and it takes the following arguments:
     Args:
-        protein_file (Path): The path to the protein file
+        protein_path (Path): The path to the protein file
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
         output_path (Path): The path to the output file
@@ -485,13 +486,13 @@ def _hyde_rescoring(
         "software/hydescorer-2.0.0/hydescorer"
         f" -i {str(docked_library_path)}"
         f" -o {str(output_path)}"
-        f" -p {str(protein_file)}"
+        f" -p {str(protein_path)}"
         f" -r {str(ref_file)}"
         " --thread-count 1"
     )
 
 def _rfscore_V2_rescoring(
-        protein_file: Path,
+        protein_path: Path,
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
@@ -499,7 +500,7 @@ def _rfscore_V2_rescoring(
     """
     This function for RFscorevs_V2 rescoring rescoring function and it takes the following arguments:
     Args:
-        protein_file (Path): The path to the protein file
+        protein_path (Path): The path to the protein file
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
         output_path (Path): The path to the output file
@@ -508,14 +509,14 @@ def _rfscore_V2_rescoring(
     """
     return (
         f"oddt_cli {str(docked_library_path)}"
-        f' --receptor {str(protein_file)}'
+        f' --receptor {str(protein_path)}'
         f" --score rfscore_v2"
         f" -O {str(output_path)}"
         " -n 1"
     )
 
 def _rfscore_v3_rescoring(
-        protein_file: Path,
+        protein_path: Path,
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
@@ -523,7 +524,7 @@ def _rfscore_v3_rescoring(
     """
     This function for RFscorevs_V3 rescoring rescoring function and it takes the following arguments:
     Args:
-        protein_file (Path): The path to the protein file
+        protein_path (Path): The path to the protein file
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
         output_path (Path): The path to the output file
@@ -532,14 +533,14 @@ def _rfscore_v3_rescoring(
     """
     return (
         f"oddt_cli {str(docked_library_path)}"
-        f' --receptor {str(protein_file)}'
+        f' --receptor {str(protein_path)}'
         f" --score rfscore_v3"
         f" -O {str(output_path)}"
         " -n 1"
     )
 
 def _vina_hydrophobic_rescoring(
-        protein_file: Path,
+        protein_path: Path,
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
@@ -547,7 +548,7 @@ def _vina_hydrophobic_rescoring(
     """
     This function for Vina Hydrophobic rescoring function and it takes the following arguments:
     Args:
-        protein_file (Path): The path to the protein file
+        protein_path (Path): The path to the protein file
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
         output_path (Path): The path to the output file
@@ -561,14 +562,14 @@ def _vina_hydrophobic_rescoring(
     else:
         return (
             f"oddt_cli {str(docked_library_path)}"
-            f' --receptor {str(protein_file)}'
+            f' --receptor {str(protein_path)}'
             f" --score rfscore_v3"
             f" -O {str(output_path)}"
             " -n 1"
         )
 
 def _vina_intra_hydrophobic_rescoring(
-        protein_file: Path,
+        protein_path: Path,
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
@@ -576,7 +577,7 @@ def _vina_intra_hydrophobic_rescoring(
     """
     This function for Vina Intra Hydrophobic rescoring function and it takes the following arguments:
     Args:
-        protein_file (Path): The path to the protein file
+        protein_path (Path): The path to the protein file
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
         output_path (Path): The path to the output file
@@ -589,7 +590,7 @@ def _vina_intra_hydrophobic_rescoring(
     else:
         return (
             f"oddt_cli {str(docked_library_path)}"
-            f' --receptor {str(protein_file)}'
+            f' --receptor {str(protein_path)}'
             f" --score rfscore_v3"
             f" -O {str(output_path)}"
             " -n 1"
@@ -799,18 +800,18 @@ def _read_rescoring_results(
 
 def _merge_rescoring_results(
         rescoring_results_path,
-        rescore_programs
+        rescoring_programs
 ):
     """
     This function is to merge the rescoring results. It takes the following arguments:
     Args:
         rescoring_results_path (str): The path to the rescoring results
-        rescore_programs (list): The list of rescoring programs to be used
+        rescoring_programs (list): The list of rescoring programs to be used
     Returns:
         Merged rescoring results in csv file
     """
     all_rescoring_dfs = []
-    for rescore_program in rescore_programs:
+    for rescore_program in rescoring_programs:
         rescore_program = rescore_program.lower()
         if f'{rescore_program}_rescoring.csv' in os.listdir(
                 rescoring_results_path / rescore_program):
@@ -837,16 +838,16 @@ def _merge_rescoring_results(
 
     return merged_df
 
-def _clean_rescoring_results(rescore_programs, rescoring_results_path):
+def _clean_rescoring_results(rescoring_programs, rescoring_results_path):
     """
     This function is to remove unncessary files and dirs. It takes the following arguments:
     Args:
-        rescore_programs (list): The list of rescoring programs to be used
+        rescoring_programs (list): The list of rescoring programs to be used
         rescoring_results_path (str): The path to the rescoring results
     Returns:
         Cleaned rescoring results
     """
-    for program in rescore_programs:
+    for program in rescoring_programs:
         program = program.lower()
         for file in os.listdir(rescoring_results_path / program):
             if file != f'{program}_rescoring.csv':

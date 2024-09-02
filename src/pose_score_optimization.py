@@ -230,6 +230,8 @@ def score_pose_optimization(
         return best_weights
 
     best_weights = {}
+    if alpha is float:
+        alphas = [alpha]
     for alpha in alphas:
         print(f'Optimization with Regularization: {alpha}')
         losses, weights = optimize_score(

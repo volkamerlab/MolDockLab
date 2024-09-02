@@ -44,11 +44,11 @@ def docking(
         local_diffdock (bool): whether to use local DiffDock
     '''
     docking_dict = {
-        'gnina': gnina_docking,
-        'smina': smina_docking,
-        'plants': plants_docking,
-        'diffdock': diffdock_docking,
-        'flexx': flexx_docking
+        'gnina': _gnina_docking,
+        'smina': _smina_docking,
+        'plants': _plants_docking,
+        'diffdock': _diffdock_docking,
+        'flexx': _flexx_docking
     }
 
     OUTPUT.mkdir(parents=True, exist_ok=True)
@@ -109,7 +109,7 @@ def docking(
             f"ERROR:{e}\n Failed to concatenate all poses in one SDF file!\n")
 
 
-def gnina_docking(
+def _gnina_docking(
         protein_file : Path,
         sdf_output : Path,
         current_library : Path,
@@ -145,7 +145,7 @@ def gnina_docking(
     start_time = time.time()
     if sdf_output.name not in os.listdir(sdf_output.parent):
         run_command(gnina_cmd)
-        end_time = time.time()    # End time
+        end_time = time.time()
 
         duration = end_time - start_time
         print(f"\n\nThe GNINA took {duration} seconds to run.")
@@ -181,7 +181,7 @@ def gnina_docking(
             allNumeric=False)
 
 
-def smina_docking(
+def _smina_docking(
         protein_file : Path,
         sdf_output : Path,
         current_library : Path,
@@ -191,7 +191,8 @@ def smina_docking(
         local_diffdock : bool
 ):
     '''
-    Perform docking using the SMINA software on a protein and a reference ligand. Docked poses are saved in SDF format.
+    Perform docking using the SMINA software on a protein and a reference ligand. 
+    Docked poses are saved in SDF format.
 
     Args:
         protein_file (Path): path to the protein file in PDB format
@@ -212,7 +213,7 @@ def smina_docking(
     if sdf_output.name not in os.listdir(sdf_output.parent):
         start_time = time.time()
         run_command(smina_cmd)
-        end_time = time.time()    # End time
+        end_time = time.time()
 
         duration = end_time - start_time
         print(f"\n\nThe SMINA took {duration} seconds to run.")
@@ -250,7 +251,7 @@ def smina_docking(
             allNumeric=False)
 
 
-def plants_docking(
+def _plants_docking(
         protein_file : Path,
         sdf_output : Path,
         current_library : Path,
@@ -260,7 +261,8 @@ def plants_docking(
         local_diffdock : bool
 ):
     '''
-    Perform docking using the PLANTS software on a protein and a reference ligand. Docked poses are saved in SDF format.
+    Perform docking using the PLANTS software on a protein and a reference ligand. 
+    Docked poses are saved in SDF format.
 
     Args:
         protein_file (Path): path to the protein file in PDB format
@@ -272,7 +274,6 @@ def plants_docking(
         local_diffdock (bool): whether to use local DiffDock
     '''
     # convert to structure, ligands, reference ligand to mol2
-    print(current_library)
     protein_mol2, mols_library_mol2, ref_ligand_mol2 = plants_preprocessing(
         protein_file, 
         current_library, 
@@ -337,7 +338,7 @@ def plants_docking(
     if sdf_output.name not in os.listdir(sdf_output.parent):
         start_time = time.time()
         run_command(plants_docking_command)
-        end_time = time.time()    # End time
+        end_time = time.time()
 
         duration = end_time - start_time
         print(f"\n\nThe PLANTS took {duration} seconds to run.")
@@ -377,11 +378,16 @@ def plants_docking(
                          idName='ID',
                          properties=list(plants_poses.columns))
 
+    # Clean up
     shutil.rmtree(sdf_output.parent / 'temp', ignore_errors=True)
     os.remove(str(sdf_output.parent / 'config.config'))
+    if (Path(os.getcwd()) / 'bindingsite.def').is_file():
+        os.remove(str(Path(os.getcwd()) / 'bindingsite.def'))
 
+    if (Path(os.getcwd()) / 'PLANTS.err').is_file():
+        os.remove(str(Path(os.getcwd()) / 'PLANTS.err'))
 
-def diffdock_docking(
+def _diffdock_docking(
         protein_file : Path,
         sdf_output : Path,
         current_library : Path,
@@ -447,18 +453,17 @@ def diffdock_docking(
         os.chdir(os.getcwd() + '/software/DiffDock')
         #start_time = time.time()
         run_command(diffdock_cmd)
-        #end_time = time.time()    # End time
-        print(diffdock_cmd)
+        #end_time = time.time()
         #duration = end_time - start_time
         #print(f"\n\nThe diffdock took {duration} seconds to run.")
         os.chdir(os.path.join(os.getcwd(), '..', '..'))
 
     if (sdf_output / 'diffdock_poses.sdf').exists():
         return
-    reading_diffdock_poses(sdf_output, n_poses, local_diffdock)
+    _reading_diffdock_poses(sdf_output, n_poses, local_diffdock)
 
 
-def reading_diffdock_poses(sdf_output : Path, n_poses : int, local_diffdock : bool) -> None:
+def _reading_diffdock_poses(sdf_output : Path, n_poses : int, local_diffdock : bool) -> None:
     
     '''
     Read the output of the DiffDock software and concatenate the poses in one SDF file.
@@ -520,7 +525,7 @@ def reading_diffdock_poses(sdf_output : Path, n_poses : int, local_diffdock : bo
             f"Compounds are already docked and concatenated, CHECK {sdf_output}")
 
 
-def flexx_docking(
+def _flexx_docking(
         protein_file : Path,
         sdf_output : Path,
         current_library : Path,
@@ -530,7 +535,8 @@ def flexx_docking(
         local_diffdock : bool
 ):
     '''
-    Perform docking using the FlexX software on a protein and a reference ligand. Docked poses are saved in SDF format.
+    Perform docking using the FlexX software on a protein and a reference ligand. 
+    Docked poses are saved in SDF format.
 
     Args:
         protein_file (Path): path to the protein file in PDB format
@@ -564,7 +570,7 @@ def flexx_docking(
         try:
             start_time = time.time()
             run_command(flexx_cmd)
-            end_time = time.time()    # End time
+            end_time = time.time()
 
             duration = end_time - start_time
             print(f"\n\nThe flexx took {duration} seconds to run.")
@@ -599,9 +605,9 @@ def poses_checker(poses_path : Path, protein_path : Path, output_file : Path) ->
     to check the quality of generated poses and returns the filtered dataframe
 
     Args:
-        poses_path: path to the poses file in SDF format
-        protein_path: path to the protein file in PDB format
-        output_file: path to the output file in CSV format
+        poses_path (Path): path to the poses file in SDF format
+        protein_path (Path): path to the protein file in PDB format
+        output_file (Path): path to the output file in CSV format
     Returns:
         filtered_df: filtered dataframe with the poses and their scores
     """

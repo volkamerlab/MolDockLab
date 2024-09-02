@@ -76,7 +76,7 @@ def  merge_activity_values(
     return df_rescored
 
 
-def get_scaffold(mol : Chem.Mol) ->Chem.rdchem.Mol:
+def _get_scaffold(mol : Chem.Mol) ->Chem.rdchem.Mol:
     """
     Get the Murcko scaffold of a molecule
     Args:
@@ -87,7 +87,7 @@ def get_scaffold(mol : Chem.Mol) ->Chem.rdchem.Mol:
     return MurckoScaffold.GetScaffoldForMol(mol)
 
 
-def get_fp(scaffold : Chem.Mol) -> np.ndarray:
+def _get_fp(scaffold : Chem.Mol) -> np.ndarray:
     """
     Get the Morgan fingerprint of a molecule
     Args:
@@ -101,7 +101,7 @@ def get_fp(scaffold : Chem.Mol) -> np.ndarray:
             scaffold, radius=2, nBits=2048))
 
 
-def get_cluster_labels(scaffold_fps : list, min_cluster_size : int=2) -> np.ndarray:
+def _get_cluster_labels(scaffold_fps : list, min_cluster_size : int=2) -> np.ndarray:
     """
     Cluster the molecules based on their scaffold fingerprints
     Args:
@@ -128,13 +128,13 @@ def hdbscan_scaffold_split(original_data_path : Path, min_cluster_size : int) ->
     """
 
     df = PandasTools.LoadSDF(str(original_data_path))
-    df['scaffold'] = df.ROMol.apply(get_scaffold)
+    df['scaffold'] = df.ROMol.apply(_get_scaffold)
 
     unique_scaffolds = list(set(df['scaffold'].apply(Chem.MolToSmiles)))
 
     print(f'Number of unique scaffolds: {len(unique_scaffolds)}')
-    df['scaffold_fp'] = df.scaffold.apply(get_fp)
-    cluster_labels = get_cluster_labels(
+    df['scaffold_fp'] = df.scaffold.apply(_get_fp)
+    cluster_labels = _get_cluster_labels(
         list(df['scaffold_fp']), min_cluster_size)
     print(f'Number of HDBSCAN clusters: {len(set(cluster_labels))}')
     df['hdbscan_scaffold_cluster'] = cluster_labels
@@ -196,8 +196,16 @@ def plants_preprocessing(
         protein_file : Path, 
         molecules_library : Path, 
         ref_file : Path
-        ):
-    # Convert protein file to .mol2 using open babel
+        ) -> tuple:
+    """
+    Convert the protein, molecules library and reference file to MOL2 format
+    Args:
+        protein_file (pathlib.Path) : path of the protein file
+        molecules_library (pathlib.Path) : path of the molecules library file
+        ref_file (pathlib.Path) : path of the reference file
+    Return:
+        protein_file, molecules_library, ref_file paths in MOL2 format
+    """
     print("PLANTS preprocessing is running ...\n\t Converting to Mol2")
     for file in [protein_file, molecules_library, ref_file]:
 
@@ -210,10 +218,11 @@ def plants_preprocessing(
             )
             run_command(obabel_command)
         else:
-            print(f"{file.stem} is already converted to mol2 format")
+            print(f"\t\t{file.stem} is already converted to MOL2 format")
 
-    return protein_file.with_suffix(".mol2"), molecules_library.with_suffix(
-        ".mol2"), ref_file.with_suffix(".mol2")
+    return (protein_file.with_suffix(".mol2"), 
+            molecules_library.with_suffix(".mol2"), 
+            ref_file.with_suffix(".mol2"))
 
 def norm_scores(
     df,
@@ -231,6 +240,9 @@ def norm_scores(
     """
     Normalize a DataFrame that has an ID in the first column numerical values of scoring functions.
     Certain specified columns will have their scaling inversed ('the lower the better').
+
+    HYDE SF is treated differently due to its wide range of values. 
+    A hard cutoff of 10000 is set and ranks of the molecules is added to the original value.
 
     Args:
             df (pd.DataFrame): The DataFrame to normalize.

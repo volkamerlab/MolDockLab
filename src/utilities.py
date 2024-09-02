@@ -2,6 +2,8 @@ import os
 import ast
 import csv
 import subprocess
+import requests
+import zipfile
 from pathlib import Path
 
 import pandas as pd
@@ -12,82 +14,58 @@ from rdkit import Chem
 from itertools import combinations, product
 
 
-def run_command(cmd):
-
+def run_command(cmd: str):
+    """
+    Run a command in the shell
+    Args:
+        cmd(str): Command to run
+    """
     try:
         subprocess.call(cmd,
                         shell=True,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.STDOUT
+                        # stdout=subprocess.DEVNULL,
+                        # stderr=subprocess.STDOUT
                         )
     except Exception as e:
         print(e)
         print(f'Error occured while running {cmd}')
         return False
 
+def _plants_pocket_generation(protein_file_mol2: Path, ref_file_mol2: Path):
+    """
+    This function generates the pocket coordinates of the protein file
 
-def get_ligand_coordinates_centers(ligand_molecule):
-    '''This function returns the center of the ligand molecule in x, y and z coordinates
     Args:
-        ligand_molecule: ligand molecule in pdb or sdf format
-
-    Returns: 
-        center of the ligand molecule in x, y and z coordinates
-    '''
-    if ligand_molecule.endswith('.sdf'):
-        supplier = Chem.SDMolSupplier(
-            ligand_molecule, sanitize=False, removeHs=False)
-        mol = supplier[0]
-    elif ligand_molecule.endswith('.pdb'):
-        mol = Chem.MolFromPDBFile(
-            ligand_molecule,
-            removeHs=False
-        )
-    else:
-        print("Please provide a valid ligand file with .pdb or .sdf extension")
-    ligand_conformer = mol.GetConformers()[0]
-    coordinates = ligand_conformer.GetPositions()
-    df = pd.DataFrame(
-        coordinates,
-        columns=[
-            "x_coord",
-            "y_coord",
-            "z_coord"])
-    center_x = str(df['x_coord'].mean().round(2))
-    center_y = str(df['y_coord'].mean().round(2))
-    center_z = str(df['z_coord'].mean().round(2))
-
-    return center_x, center_y, center_z
-
-
-def plants_pocket_generation(protein_file_mol2, ref_file_mol2):
-
+        protein_file_mol2(pathlib.Path): protein file in mol2 format
+        ref_file_mol2(pathlib.Path): reference file in mol2 format
+    """
     plants_pocket_cmd = f"./software/PLANTS --mode bind {str(ref_file_mol2)} {str(protein_file_mol2)}"
     run_command(plants_pocket_cmd)
-    print('PLANTS bind mode was executed.')
-
+    print('PLANTS bind mode is executed.')
 
 def pocket_coordinates_generation(
-        protein_mol2,
-        ref_file_mol2,
-        pocket_coordinates_path='bindingsite.def'
+        protein_mol2: Path,
+        ref_file_mol2: Path,
+        pocket_coordinates_path : str ='bindingsite.def'
         ):
-    '''
-    This function generates the pocket coordinates of the protein file and returns the center of the pocket in x, y and z coordinates and the radius of the pocket
+    """
+    This function generates the pocket coordinates of the protein file and 
+    returns the center of the pocket in x, y and z coordinates and the radius of the pocket
 
     Args:
-        protein_mol2: protein file in mol2 format
-        ref_file_mol2: reference file in mol2 format
-        pocket_coordinates_path: path to the pocket coordinates file
+        - protein_file_mol2 (pathlib.Path): protein file in mol2 format
+        - ref_file_mol2 (pathlib.Path) : reference file in mol2 format
+        - pocket_coordinates_path (str) : Optional; path to the pocket coordinates file
 
     Returns:
-        center_x: x coordinate of the pocket center
-        center_y: y coordinate of the pocket center
-        center_z: z coordinate of the pocket center
-        radius: radius of the pocket
-    '''
-
-    plants_pocket_generation(protein_mol2, ref_file_mol2)
+        tuple: A tuple containing the x, y, and z coordinates of the pocket center,
+               and the radius of the pocket. Specifically:
+               - center_x (float): x coordinate of the pocket center.
+               - center_y (float): y coordinate of the pocket center.
+               - center_z (float): z coordinate of the pocket center.
+               - radius (float): radius of the pocket.
+    """
+    _plants_pocket_generation(protein_mol2, ref_file_mol2)
 
     # Open and read the file
     with open(Path.cwd() / pocket_coordinates_path, 'r') as file:
@@ -102,20 +80,18 @@ def pocket_coordinates_generation(
                 radius = float(parts[1])
     return center_x, center_y, center_z, radius
 
-
-def pdb2resname_resno(input_file):
-    '''
-    This function extracts the residue name and residue number from the protein file and returns a list of tuples of resname and resnumber
+def _pdb2resname_resno(input_file : str) -> list:
+    """
+    This function extracts the residue name and residue number from the protein file 
+    and returns a list of tuples of resname and resnumber
 
     Args:
-        input_file: protein file in pdb format
+        input_file(str): protein file in pdb format
 
     Returns: 
-        a list of tuples of chain_ID, resname and resnumber
-    '''
-
+        resname_resnumbers(list): a list of tuples of chain_ID, resname and resnumber
+    """
     resname_resnumbers = []
-    # Read the lines of the file
     with open(input_file, 'r') as pdb_file:
         pdb_lines = pdb_file.readlines()
         for pdb_line in pdb_lines:
@@ -131,24 +107,26 @@ def pdb2resname_resno(input_file):
     return (resname_resnumbers)
 
 
-def extract_binding_pocket(protein_file, output_file):
-    '''
-    This function extracts the binding pocket residue indices from the protein file
-    using the binding pocket and writes the residue number to a csv file which is suitable more for local diffdock
+def extract_binding_pocket(protein_file : Path, output_file : Path) :
+    """
+    This function extracts the binding pocket residue indices
+    from the protein file using the binding pocket and writes 
+    the residue number to a csv file which is suitable more for local diffdock
 
-    Binding pocket file has to be named  the same as the protein file with the suffix '_pocket.pdb'
+    Binding pocket file has to be named  the same as the protein file with 
+    the suffix '_pocket.pdb'
     
     Args:
-        protein_file: protein file in pdb format
-        output_file: output file in csv format
+        protein_file(pathlib.Path): protein file in pdb format
+        output_file(pathlib.Path): output file in csv format
 
     Returns:
       csv file with residue numbers of binding pocket residues in results folder
-    '''
+    """
     binding_pocket = protein_file.with_name(protein_file.stem + '_pocket.pdb')
     if binding_pocket.exists():
-        whole = pdb2resname_resno(str(protein_file))
-        ref = pdb2resname_resno(str(binding_pocket))
+        whole = _pdb2resname_resno(str(protein_file))
+        ref = _pdb2resname_resno(str(binding_pocket))
     else:
         print('Binding pocket file does not exist. Please provide a binding pocket file')
         return
@@ -161,30 +139,25 @@ def extract_binding_pocket(protein_file, output_file):
 
     with open(str(output_file), 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        # Combine all items in the dictionary values into a single row
+
         row = []
         for _, item in indices_dict.items():
             row.append(item)
         
-        # Write the single row to the CSV file
         writer.writerow(row)
-
-def any_in_list(list1, list2):
-    return any(i in list2 for i in list1)
 
 
 def split_sdf(file_path, scoring_function, thread_num):
     """
     Split SDF file into chunks
     Args:
-        file_path: Path to SDF file
-        thread_num: Number of threads to split the file into
+        file_path(pathlib.Path): Path to SDF file
+        scoring_function(str): Scoring function to use
+        thread_num(int): Number of threads to split the file into
 
     Returns: 
         List of paths to splitted files
     """
-    # @ TODO : Convert splitted to pdbqt format in case of CHEMPLP and SCORCH
-
     output_folders = []
     with open(file_path, 'r') as file:
         lines = file.readlines()
@@ -229,22 +202,21 @@ def split_sdf(file_path, scoring_function, thread_num):
 
 
 def pdb_converter(
-    protein_file,
-    rescore_programs,
+    protein_file : Path,
+    rescore_programs : list,
 ):
-    '''
+    """
     The function converts the protein file to pdbqt format in case of SCORCH SF
     and to mol2 format in case of CHEMPLP SF
 
     Args: 
-        protein_file: protein file in pdb format
-        rescore_programs: list of rescoring programs
-    '''
+        protein_file(pathlib.Path): protein file in pdb format
+        rescore_programs(list): list of rescoring programs
+    """
     if "chemplp" in rescore_programs:
         if f'{protein_file.stem}.mol2' in os.listdir(protein_file.parent):
             print('protein is already converted to mol2')
         else:
-            # convert protein to pdbqt
             run_command(f"obabel -ipdb {str(protein_file)}" f" -O {str(protein_file.parent / f'{protein_file.stem}.mol2')}")
 
     if "scorch" in rescore_programs:
@@ -252,7 +224,6 @@ def pdb_converter(
         if f'{protein_file.stem}.pdbqt' in os.listdir(protein_file.parent):
             print('protein is already converted to pdbqt')
         else:
-            # convert protein to pdbqt
             run_command(f"obabel -ipdb {str(protein_file)}"
                         f" -O {str(protein_file.parent / f'{protein_file.stem}.pdbqt')}"
                         " --partialcharges gasteiger -p -h")
@@ -262,10 +233,10 @@ def split_list(input_list, num_splits):
     """
     Split a list into a number of splits
     Args:
-        input_list: List to split
-        num_splits: Number of splits
+        input_list(list): List to split
+        num_splits(int): Number of splits
     Returns:
-        partitions: List of partitions
+        partitions(list): List of partitions
     """
     avg_size = len(input_list) // num_splits
     remain = len(input_list) % num_splits
@@ -276,24 +247,23 @@ def split_list(input_list, num_splits):
         partitions.append(input_list[i:i + partition_size])
         i += partition_size
         remain -= 1
-        # print(len(partitions[-1]))
     return partitions
 
 
-def read_posebusters_data(df):
+def read_posebusters_data(df : pd.DataFrame) -> pd.DataFrame:
     """
-    Read the PoseBusters data and return the number of docked molecules for each docking tool and the number of failed molecules 
+    Read the PoseBusters data and return the number of docked molecules 
+    for each docking tool and the number of failed molecules 
     Args:
-        df: DataFrame of the PoseBusters data
+        df(pd.DataFrame): DataFrame of the PoseBusters data
     Returns:
-        df_filtered: DataFrame with the number of docked molecules for each docking tool
+        df_filtered(pd.DataFrame): DataFrame with the number of docked molecules for each docking tool
     """ 
-    df[['original_id', 'docking_tool', 'pose']
-       ] = df['molecule'].str.split('_', expand=True)
+    df[['original_id', 'docking_tool', 'pose']] = df['molecule'].str.split('_', expand=True)
     # Group by the 'docking_tool' and sum the False values for every column.
-# Convert boolean columns to integers for summing (False becomes 0, True becomes 1).
-# Then subtract the sum from the count of rows to get the number of False
-# values.
+    # Convert boolean columns to integers for summing (False becomes 0, True becomes 1).
+    # Then subtract the sum from the count of rows to get the number of False
+    # values.
     df_grouped = df.groupby('docking_tool').apply(
         lambda x: x.shape[0] -
         x.select_dtypes(
@@ -303,23 +273,17 @@ def read_posebusters_data(df):
 
     df_grouped['Number of Docked Molecules'] = list(
         unique_id_count['unique_id_count'])
-    # df_grouped['original_id'] = df.original_id.value_counts()
-    # # Reset the index to have 'docking_tool' as a column
     df_grouped.reset_index(inplace=True)
     df_filtered = df_grouped.loc[:, (df_grouped != 0).any(axis=0)]
     return df_filtered
 
-# make a function that takes the path of the csv file and generate
-# correlation matrix and check pairs that has correlation of 0.9 or higher
-
-
-def generate_correlation_matrix(df):
+def _generate_correlation_matrix(df : pd.DataFrame) -> pd.DataFrame:
     """
     Generate correlation matrix from a csv file
     Args:
-        df: DataFrame of the csv file
+        df (pd.DataFrame): DataFrame of the csv file
     Returns:
-        correlation_matrix: Correlation matrix of the numerical columns
+        correlation_matrix(pd.DataFrame): Correlation matrix of the numerical columns
     """
     for col in df.columns:
         try:
@@ -329,15 +293,17 @@ def generate_correlation_matrix(df):
     correlation_matrix = df.select_dtypes('number').corr()
     return correlation_matrix
 
-
-def check_correlation_pairs(correlation_matrix, threshold=0.9):
+def check_correlation_pairs(
+        correlation_matrix : pd.DataFrame, 
+        threshold : float =0.9
+        ) -> list[tuple]:
     """
     Check pairs of columns that have correlation of a threshold, 0.9 is the default threshold
     Args:
-        correlation_matrix: Correlation matrix of the numerical columns
-        threshold: Threshold for correlation
+        correlation_matrix (pd.DataFrame): Correlation matrix of the numerical columns
+        threshold (float): Threshold for correlation
     Returns:
-        pairs: List of pairs of columns that have correlation of a threshold
+        pairs (list): List of pairs of columns that have correlation of a threshold
     """
     pairs = []
     for i in range(correlation_matrix.shape[0]):
@@ -348,19 +314,23 @@ def check_correlation_pairs(correlation_matrix, threshold=0.9):
                      correlation_matrix.columns[j]))
     return pairs
 
-
-def handling_multicollinearity(df, threshold=0.9, true_value_col='true_value'):
+def handling_multicollinearity(
+        df : pd.DataFrame, 
+        threshold : float =0.9, 
+        true_value_col : str ='true_value'
+        ) -> pd.DataFrame:
     """
-    Remove columns that are highly correlated with each other and keep the ones that are more correlated with the 'True Value'
+    Remove columns that are highly correlated with each other 
+    and keep the ones that are more correlated with the 'True Value'.
     Args:
-        df: dataframe
-        threshold: Threshold for correlation
-        true_value_col: Name of the column that is the true value
+        df (pd.DataFrame): dataframe
+        threshold (int): Threshold for correlation
+        true_value_col (str): Name of the column that is the true value
     Returns:
-        df: DataFrame without correlated columns
+        df (pd.DataFrame): DataFrame without correlated columns
     """
 
-    corr_matrix = generate_correlation_matrix(df)
+    corr_matrix = _generate_correlation_matrix(df)
     display(corr_matrix.style.background_gradient(cmap='coolwarm'))
     pairs = check_correlation_pairs(corr_matrix, threshold)
     columns_to_remove = set()
@@ -376,15 +346,15 @@ def handling_multicollinearity(df, threshold=0.9, true_value_col='true_value'):
     df.drop(columns=list(columns_to_remove), inplace=True)
     return df
 
-def split_list(input_list, num_splits):
-    '''
+def split_list(input_list : list, num_splits : int) -> list:
+    """
     Split a list into n parts.
     Args:
-        input_list: list to be split
-        num_splits: number of splits
+        input_list (list): list to be split
+        num_splits (int): number of splits
     Returns: 
         list of splitted lists
-    '''
+    """
     avg_size = len(input_list) // num_splits
     remain = len(input_list) % num_splits
     partitions = []
@@ -394,16 +364,16 @@ def split_list(input_list, num_splits):
         partitions.append(input_list[i:i+partition_size])
         i += partition_size
         remain -= 1
-        # print(len(partitions[-1]))
     return partitions
-def workflow_combinations(docking_programs: list, rescoring_programs: list):
+
+def workflow_combinations(docking_programs: list, rescoring_programs: list) -> list:
     """
     Generate all combinations of docking methods and scoring functions.
     Args:
-        docking_programs: list of docking methods
-        rescoring_programs: list of rescoring programs
+        docking_programs (list): list of docking methods
+        rescoring_programs (list): list of rescoring programs
     Returns: 
-               list of tuples with all combinations of docking methods and scoring functions
+        list of tuples with all combinations of docking methods and scoring functions
     """
     all_comb_scoring_function = [item for r in range(1, len(rescoring_programs) + 1) 
                                  for item in combinations(sorted(rescoring_programs), r)]
@@ -411,18 +381,21 @@ def workflow_combinations(docking_programs: list, rescoring_programs: list):
                                  for item in combinations(sorted(docking_programs), r)]
 
     return list(product(all_comb_docking_program, all_comb_scoring_function))
+
 def get_selected_workflow(row:int, corr_path:Path) -> tuple:
     """
-    This function takes the row number and the path of the correlation file and returns the selected docking tools, scoring tools and ranking method
+    This function takes the row number and the path of the correlation file 
+    and returns the selected docking tools, scoring tools and ranking method.
     
     Args:
-        row: int: the row number of the dataframe
-        corr_path: Path: the path of the correlation file
+        row (int): the row number of the dataframe
+        corr_path (Path): the path of the correlation file
 
     Returns:
-        docking_tools: list: the selected docking tools
-        scoring_tools: list: the selected scoring tools
-        ranking_method: str: the selected ranking method
+        tuple: A tuple containing three elements:
+                - docking_tools (list): A list of selected docking tools extracted from the specified row.
+                - scoring_tools (list): A list of selected scoring tools extracted from the specified row.
+                - ranking_method (str): The ranking method used, specified in the same row.
     """
     df = pd.read_csv(corr_path)
     docking_tools = df.iloc[row]['docking_tool']
@@ -430,3 +403,37 @@ def get_selected_workflow(row:int, corr_path:Path) -> tuple:
     ranking_method = df.iloc[row]['ranking_method']
     
     return ast.literal_eval(docking_tools), ast.literal_eval(scoring_tools), ranking_method
+
+
+def download_and_extract_zip(url, extract_to):
+    """
+    Download a ZIP file from a URL and extract its contents into a specific folder.
+
+    Args:
+        url (str): The URL of the ZIP file to download.
+        extract_to (str): The directory path to extract the contents of the ZIP file.
+    Returns:
+        Downloaded CSV file in the extract_to directory
+    """
+    # Ensure the directory exists where files will be extracted
+    if not os.path.exists(extract_to):
+        os.makedirs(extract_to)
+
+    # Download the file
+    response = requests.get(url)
+    if response.status_code == 200:
+        zip_path = os.path.join(extract_to, 'temp.zip')
+        with open(zip_path, 'wb') as f:
+            f.write(response.content)
+        print("Downloaded the ZIP file successfully.")
+
+        # Extract the ZIP file
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(extract_to)
+        print(f"Extracted the ZIP file contents to {extract_to}")
+
+        # Clean up the temporary ZIP file
+        os.remove(zip_path)
+        print("Removed the temporary ZIP file.")
+    else:
+        print("Failed to download the file. Status code:", response.status_code)

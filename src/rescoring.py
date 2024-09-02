@@ -26,29 +26,29 @@ def rescoring_function(
     This function is the high-level function to deploy all scoring functions. It takes the following arguments:
     Args:
         rescore_programs (list): The list of rescoring programs to be used
-        protein_file (str): The path to the protein file
-        docked_library_path (str): The path to the docked library
-        ref_file (str): The path to the reference ligand file
+        protein_file (Path): The path to the protein file
+        docked_library_path (Path): The path to the docked library
+        ref_file (Path): The path to the reference ligand file
     Returns:
         Saved rescoring results in the rescoring_results folder as csv file, besides the individual rescoring results in the rescoring_results folder
     """
     rescoring_dict = {
 
-        'smina_affinity': smina_rescoring,
-        'ad4': ad4_rescoring,
-        'linf9': linf9_rescoring,
-        'vinardo': vinardo_rescoring,
-        'chemplp': chemplp_rescoring,
-        'hyde': hyde_rescoring,
-        'vina_hydrophobic': vina_hydrophobic_rescoring,
-        'vina_intra_hydrophobic': vina_intra_hydrophobic_rescoring,
-        'rtmscore': rtmscore_rescoring,
-        'rfscore_v1': rfscore_V1_rescoring,
-        'rfscore_v2': rfscore_V2_rescoring,
-        'rfscore_v3': rfscore_v3_rescoring,
-        'cnnscore': gnina_score_rescoring,
-        'cnnaffinity': gnina_affinity_rescoring,
-        'scorch': scorch_rescoring,
+        'smina_affinity': _smina_rescoring,
+        'ad4': _ad4_rescoring,
+        'linf9': _linf9_rescoring,
+        'vinardo': _vinardo_rescoring,
+        'chemplp': _chemplp_rescoring,
+        'hyde': _hyde_rescoring,
+        'vina_hydrophobic': _vina_hydrophobic_rescoring,
+        'vina_intra_hydrophobic': _vina_intra_hydrophobic_rescoring,
+        'rtmscore': _rtmscore_rescoring,
+        'rfscore_v1': _rfscore_V1_rescoring,
+        'rfscore_v2': _rfscore_V2_rescoring,
+        'rfscore_v3': _rfscore_v3_rescoring,
+        'cnnscore': _gnina_score_rescoring,
+        'cnnaffinity': _gnina_affinity_rescoring,
+        'scorch': _scorch_rescoring,
     }
     # Create folder for rescoring results
     results_folder = docked_library_path.parent / 'rescoring_results'
@@ -97,27 +97,25 @@ def rescoring_function(
 
             duration = end_time - start_time
             print(f"\n\nThe {program} took {duration} seconds to run.")
-        read_rescoring_results(results_folder, program)
+        _read_rescoring_results(results_folder, program)
 
-    merge_rescoring_results(results_folder, rescore_programs)
-    # remove splitted file
+    _merge_rescoring_results(results_folder, rescore_programs)
     shutil.rmtree(splitted_file_paths[0].parent)    
-    # clean the rescoring results
-    clean_rescoring_results(rescore_programs, results_folder)
+    _clean_rescoring_results(rescore_programs, results_folder)
 
-def ad4_rescoring(
-        protein_file,
-        docked_library_path,
-        ref_file,
-        output_path
+def _ad4_rescoring(
+        protein_file: Path,
+        docked_library_path: Path,
+        ref_file: Path,
+        output_path: Path,
 ) -> str:
     """
     This function for AD4 rescoring function and it takes the following arguments:
     Args:
-        protein_file (str): The path to the protein file
-        docked_library_path (str): The path to the docked library
-        ref_file (str): The path to the reference ligand file
-        output_path (str): The path to the output file
+        protein_file (Path): The path to the protein file
+        docked_library_path (Path): The path to the docked library
+        ref_file (Path): The path to the reference ligand file
+        output_path (Path): The path to the output file
     Returns:
         The command to run the AD4 rescoring function
     """
@@ -132,19 +130,19 @@ def ad4_rescoring(
     )
 
 
-def smina_rescoring(
-        protein_file,
-        docked_library_path,
-        ref_file,
-        output_path
+def _smina_rescoring(
+        protein_file: Path,
+        docked_library_path: Path,
+        ref_file: Path,
+        output_path: Path,
 ) -> str:
     """
     This function for SMINA rescoring function and it takes the following arguments:
     Args:
-        protein_file (str): The path to the protein file
-        docked_library_path (str): The path to the docked library
-        ref_file (str): The path to the reference ligand file
-        output_path (str): The path to the output file
+        protein_file (Path): The path to the protein file
+        docked_library_path (Path): The path to the docked library
+        ref_file (Path): The path to the reference ligand file
+        output_path (Path): The path to the output file
     Returns:
         The command to run the SMINA rescoring function
     """
@@ -165,19 +163,19 @@ def smina_rescoring(
         )
 
 
-def gnina_score_rescoring(
-        protein_file,
-        docked_library_path,
-        ref_file,
-        output_path
+def _gnina_score_rescoring(
+        protein_file: Path,
+        docked_library_path: Path,
+        ref_file: Path,
+        output_path: Path,
 ) -> str:
     """
     This function for the score of GNINA rescoring function and it takes the following arguments:
     Args:
-        protein_file (str): The path to the protein file
-        docked_library_path (str): The path to the docked library
-        ref_file (str): The path to the reference ligand file
-        output_path (str): The path to the output file
+        protein_file (Path): The path to the protein file
+        docked_library_path (Path): The path to the docked library
+        ref_file (Path): The path to the reference ligand file
+        output_path (Path): The path to the output file
     Returns:
         The command to run the the score of GNINA rescoring function
     """
@@ -197,19 +195,19 @@ def gnina_score_rescoring(
     )
 
 
-def gnina_affinity_rescoring(
-        protein_file,
-        docked_library_path,
-        ref_file,
-        output_path
+def _gnina_affinity_rescoring(
+        protein_file: Path,
+        docked_library_path: Path,
+        ref_file: Path,
+        output_path: Path,
 ) -> str:
     """
     This function for GNINA rescoring function and it takes the following arguments:
     Args:
-        protein_file (str): The path to the protein file
-        docked_library_path (str): The path to the docked library
-        ref_file (str): The path to the reference ligand file
-        output_path (str): The path to the output file
+        protein_file (Path): The path to the protein file
+        docked_library_path (Path): The path to the docked library
+        ref_file (Path): The path to the reference ligand file
+        output_path (Path): The path to the output file
     Returns:
         The command to run the GNINA rescoring function
     """
@@ -228,19 +226,19 @@ def gnina_affinity_rescoring(
     )
 
 
-def vinardo_rescoring(
-        protein_file,
-        docked_library_path,
-        ref_file,
-        output_path
+def _vinardo_rescoring(
+        protein_file: Path,
+        docked_library_path: Path,
+        ref_file: Path,
+        output_path: Path,
 ) -> str:
     """
     This function for Vinardo rescoring function and it takes the following arguments:
     Args:
-        protein_file (str): The path to the protein file
-        docked_library_path (str): The path to the docked library
-        ref_file (str): The path to the reference ligand file
-        output_path (str): The path to the output file
+        protein_file (Path): The path to the protein file
+        docked_library_path (Path): The path to the docked library
+        ref_file (Path): The path to the reference ligand file
+        output_path (Path): The path to the output file
     Returns:
         The command to run the Vinardo rescoring function
     """
@@ -255,19 +253,19 @@ def vinardo_rescoring(
     )
 
 
-def chemplp_rescoring(
-        protein_file,
-        docked_library_path,
-        ref_file,
-        output_path
+def _chemplp_rescoring(
+        protein_file: Path,
+        docked_library_path: Path,
+        ref_file: Path,
+        output_path: Path,
 ) -> str:
     """
     This function for CHEMPLP rescoring function and it takes the following arguments:
     Args:
-        protein_file (str): The path to the protein file
-        docked_library_path (str): The path to the docked library
-        ref_file (str): The path to the reference ligand file
-        output_path (str): The path to the output file
+        protein_file (Path): The path to the protein file
+        docked_library_path (Path): The path to the docked library
+        ref_file (Path): The path to the reference ligand file
+        output_path (Path): The path to the output file
     Returns:
         The command to run the CHEMPLP rescoring function
     """
@@ -321,8 +319,7 @@ def chemplp_rescoring(
         '####\n']
 
     # Write config file
-    chemplp_rescoring_config_path_config = docked_library_path.parent / \
-        f'{output_path.stem}.config'
+    chemplp_rescoring_config_path_config = docked_library_path.parent / f'{output_path.stem}.config'
 
     with chemplp_rescoring_config_path_config.open('w') as configwriter:
         configwriter.writelines(chemplp_config)
@@ -331,19 +328,19 @@ def chemplp_rescoring(
     return f'./software/PLANTS --mode rescore {str(chemplp_rescoring_config_path_config)}'
 
 
-def linf9_rescoring(
-        protein_file,
-        docked_library_path,
-        ref_file,
-        output_path
+def _linf9_rescoring(
+        protein_file: Path,
+        docked_library_path: Path,
+        ref_file: Path,
+        output_path: Path,
 ) -> str:
     """
     This function for LinF9 rescoring function and it takes the following arguments:
     Args:
-        protein_file (str): The path to the protein file
-        docked_library_path (str): The path to the docked library
-        ref_file (str): The path to the reference ligand file
-        output_path (str): The path to the output file
+        protein_file (Path): The path to the protein file
+        docked_library_path (Path): The path to the docked library
+        ref_file (Path): The path to the reference ligand file
+        output_path (Path): The path to the output file
     Returns:
         The command to run the LinF9 rescoring function
     """
@@ -357,19 +354,19 @@ def linf9_rescoring(
     )
 
 
-def rtmscore_rescoring(
-        protein_file,
-        docked_library_path,
-        ref_file,
-        output_path
+def _rtmscore_rescoring(
+        protein_file: Path,
+        docked_library_path: Path,
+        ref_file: Path,
+        output_path: Path,
 ):
     """
     This function for RTMScore rescoring function and it takes the following arguments:
     Args:
-        protein_file (str): The path to the protein file
-        docked_library_path (str): The path to the docked library
-        ref_file (str): The path to the reference ligand file
-        output_path (str): The path to the output file
+        protein_file (Path): The path to the protein file
+        docked_library_path (Path): The path to the docked library
+        ref_file (Path): The path to the reference ligand file
+        output_path (Path): The path to the output file
     Returns:
         The command to run the RTMScore rescoring function
     """
@@ -397,19 +394,19 @@ def rtmscore_rescoring(
     )
 
 
-def scorch_rescoring(
-        protein_file,
-        docked_library_path,
-        ref_file,
-        output_path
+def _scorch_rescoring(
+        protein_file: Path,
+        docked_library_path: Path,
+        ref_file: Path,
+        output_path: Path,
 ):
     """
     This function for SCORCH rescoring function and it takes the following arguments:
     Args:
-        protein_file (str): The path to the protein file
-        docked_library_path (str): The path to the docked library
-        ref_file (str): The path to the reference ligand file
-        output_path (str): The path to the output file
+        protein_file (Path): The path to the protein file
+        docked_library_path (Path): The path to the docked library
+        ref_file (Path): The path to the reference ligand file
+        output_path (Path): The path to the output file
     Returns:
         The command to run the SCORCH rescoring function
     """
@@ -417,6 +414,15 @@ def scorch_rescoring(
     docked_library_file_pdqbt = str(
         docked_library_path).replace('.sdf', '.pdbqt')
     ref_ligand_pdqbt = str(ref_file).replace('.pdb', '.pdbqt')
+    print(
+        f'python software/SCORCH/scorch.py '
+        f' --receptor {str(protein_file_pdqbt)} '
+        f' --ligand {docked_library_file_pdqbt}'
+        f" --ref_lig {str(ref_ligand_pdqbt)}"
+        f' --out {str(output_path.parent / output_path.stem)}.csv'
+        ' --return_pose_scores'
+        ' --threads 1'
+    )
     return (
         f'python software/SCORCH/scorch.py '
         f' --receptor {str(protein_file_pdqbt)} '
@@ -428,19 +434,19 @@ def scorch_rescoring(
     )
 
 
-def rfscore_V1_rescoring(
-        protein_file,
-        docked_library_path,
-        ref_file,
-        output_path
+def _rfscore_V1_rescoring(
+        protein_file: Path,
+        docked_library_path: Path,
+        ref_file: Path,
+        output_path: Path,
 ):
     """
     This function for RFScore_ver1 rescoring function and it takes the following arguments:
     Args:
-        protein_file (str): The path to the protein file
-        docked_library_path (str): The path to the docked library
-        ref_file (str): The path to the reference ligand file
-        output_path (str): The path to the output file
+        protein_file (Path): The path to the protein file
+        docked_library_path (Path): The path to the docked library
+        ref_file (Path): The path to the reference ligand file
+        output_path (Path): The path to the output file
     Returns:
         The command to run the SCORCH rescoring function
     """
@@ -453,19 +459,19 @@ def rfscore_V1_rescoring(
     )
 
 
-def hyde_rescoring(
-        protein_file,
-        docked_library_path,
-        ref_file,
-        output_path
+def _hyde_rescoring(
+        protein_file: Path,
+        docked_library_path: Path,
+        ref_file: Path,
+        output_path: Path,
 ):
     """
     This function for HYDE rescoring function and it takes the following arguments:
     Args:
-        protein_file (str): The path to the protein file
-        docked_library_path (str): The path to the docked library
-        ref_file (str): The path to the reference ligand file
-        output_path (str): The path to the output file
+        protein_file (Path): The path to the protein file
+        docked_library_path (Path): The path to the docked library
+        ref_file (Path): The path to the reference ligand file
+        output_path (Path): The path to the output file
     Returns:
         The command to run the HYDE rescoring function
     """
@@ -484,20 +490,19 @@ def hyde_rescoring(
         " --thread-count 1"
     )
 
-
-def rfscore_V2_rescoring(
-        protein_file,
-        docked_library_path,
-        ref_file,
-        output_path
+def _rfscore_V2_rescoring(
+        protein_file: Path,
+        docked_library_path: Path,
+        ref_file: Path,
+        output_path: Path,
 ):
     """
     This function for RFscorevs_V2 rescoring rescoring function and it takes the following arguments:
     Args:
-        protein_file (str): The path to the protein file
-        docked_library_path (str): The path to the docked library
-        ref_file (str): The path to the reference ligand file
-        output_path (str): The path to the output file
+        protein_file (Path): The path to the protein file
+        docked_library_path (Path): The path to the docked library
+        ref_file (Path): The path to the reference ligand file
+        output_path (Path): The path to the output file
     Returns:
         The command to run the RFscorevs_V2 rescoring rescoring function
     """
@@ -509,59 +514,50 @@ def rfscore_V2_rescoring(
         " -n 1"
     )
 
-
-def rfscore_v3_rescoring(
-        protein_file,
-        docked_library_path,
-        ref_file,
-        output_path
+def _rfscore_v3_rescoring(
+        protein_file: Path,
+        docked_library_path: Path,
+        ref_file: Path,
+        output_path: Path,
 ):
     """
     This function for RFscorevs_V3 rescoring rescoring function and it takes the following arguments:
     Args:
-        protein_file (str): The path to the protein file
-        docked_library_path (str): The path to the docked library
-        ref_file (str): The path to the reference ligand file
-        output_path (str): The path to the output file
+        protein_file (Path): The path to the protein file
+        docked_library_path (Path): The path to the docked library
+        ref_file (Path): The path to the reference ligand file
+        output_path (Path): The path to the output file
     Returns:
         The command to run the RFscorevs_V3 rescoring rescoring function
     """
-    if any_in_list(['vina_hydrophobic', 'vina_intra_hydrophobic'],
-                   os.listdir((output_path.parent).parent)):
-        print(f'{docked_library_path.name} is already excuted')
-        pass
-    else:
-        return (
-            f"oddt_cli {str(docked_library_path)}"
-            f' --receptor {str(protein_file)}'
-            f" --score rfscore_v3"
-            f" -O {str(output_path)}"
-            " -n 1"
-        )
+    return (
+        f"oddt_cli {str(docked_library_path)}"
+        f' --receptor {str(protein_file)}'
+        f" --score rfscore_v3"
+        f" -O {str(output_path)}"
+        " -n 1"
+    )
 
-
-def vina_hydrophobic_rescoring(
-        protein_file,
-        docked_library_path,
-        ref_file,
-        output_path
+def _vina_hydrophobic_rescoring(
+        protein_file: Path,
+        docked_library_path: Path,
+        ref_file: Path,
+        output_path: Path,
 ):
     """
     This function for Vina Hydrophobic rescoring function and it takes the following arguments:
     Args:
-        protein_file (str): The path to the protein file
-        docked_library_path (str): The path to the docked library
-        ref_file (str): The path to the reference ligand file
-        output_path (str): The path to the output file
+        protein_file (Path): The path to the protein file
+        docked_library_path (Path): The path to the docked library
+        ref_file (Path): The path to the reference ligand file
+        output_path (Path): The path to the output file
     Returns:
         The command to run the Vina Hydrophobic rescoring function
     """
     # @TODO : check if the poses are already rescored through RF-Score-V3, if yes, copy the file to the output path
-    if any_in_list(['rfscorevs_v3', 'vina_intra_hydrophobic'],
-                   os.listdir((output_path.parent).parent)):
+    if ((output_path.parent).parent / 'rfscore_v3' / 'rfscore_v3_0.sdf').is_file():
         print(f'{docked_library_path.name} is already excuted')
         return
-
     else:
         return (
             f"oddt_cli {str(docked_library_path)}"
@@ -571,25 +567,23 @@ def vina_hydrophobic_rescoring(
             " -n 1"
         )
 
-
-def vina_intra_hydrophobic_rescoring(
-        protein_file,
-        docked_library_path,
-        ref_file,
-        output_path
+def _vina_intra_hydrophobic_rescoring(
+        protein_file: Path,
+        docked_library_path: Path,
+        ref_file: Path,
+        output_path: Path,
 ):
     """
     This function for Vina Intra Hydrophobic rescoring function and it takes the following arguments:
     Args:
-        protein_file (str): The path to the protein file
-        docked_library_path (str): The path to the docked library
-        ref_file (str): The path to the reference ligand file
-        output_path (str): The path to the output file
+        protein_file (Path): The path to the protein file
+        docked_library_path (Path): The path to the docked library
+        ref_file (Path): The path to the reference ligand file
+        output_path (Path): The path to the output file
     Returns:
         The command to run the Vina Intra Hydrophobic rescoring function
     """
-    if any_in_list(['rfscorevs_v3', 'vina_hydrophobic'],
-                   os.listdir((output_path.parent).parent)):
+    if ((output_path.parent).parent / 'rfscore_v3' / 'rfscore_v3_0.sdf').is_file():
         print(f'{output_path.name} is already excuted')
         return
     else:
@@ -601,8 +595,7 @@ def vina_intra_hydrophobic_rescoring(
             " -n 1"
         )
 
-
-def read_sdf_values_and_names(sdf_file_path):
+def _read_sdf_values_and_names(sdf_file_path):
     with open(sdf_file_path, 'r') as file:
         all_records = []
         capture_data = False
@@ -611,46 +604,38 @@ def read_sdf_values_and_names(sdf_file_path):
         for line in file:
             line = line.strip()
             if line == "$$$$":
-                # End of the current molecule record, reset for the next
-                # molecule
                 all_records.append((molecule_name, current_values))
                 capture_data = False
                 current_values = {}
                 molecule_name = ""
             elif capture_data:
                 if line.startswith("> <"):
-                    # Assuming a simple key-value pair structure for data items
                     parts = line.split("> <")
                     if len(parts) == 2:
                         key = parts[1].split(">")[0]
-                        # Read the next line for the value
                         value = next(file).strip()
                         current_values[key] = value
 
                 if line.startswith(">  <"):
-                    # Assuming a simple key-value pair structure for data items
                     parts = line.split(">  <")
                     if len(parts) == 2:
                         key = parts[1].split(">")[0]
-                        # Read the next line for the value
                         value = next(file).strip()
                         current_values[key] = value
 
             elif line == "M  END":
-                # Start capturing the data items after this line
                 capture_data = True
             else:
-                if not molecule_name:  # Capture the first non-empty line as the molecule name
+                if not molecule_name:  
                     molecule_name = line
         df = pd.DataFrame.from_records(
             all_records, columns=[
                 'ID', 'Properties'])
-        df = pd.concat([df.drop(['Properties'], axis=1),
-                       df['Properties'].apply(pd.Series)], axis=1)
+        df = pd.concat([df.drop(['Properties'], axis=1), df['Properties'].apply(pd.Series)], axis=1)
     return df
 
 
-def read_rescoring_results(
+def _read_rescoring_results(
         rescoring_results_path,
         rescore_program
         ):
@@ -664,149 +649,155 @@ def read_rescoring_results(
     dfs = []
     print('\n\nReading rescoring results ⌛ ...\n\n')
 
-    if f'{rescore_program}_rescoring.csv' in os.listdir(
-            rescoring_results_path):
-        print(f'{rescore_program} is already read')
-        return
+    try:
+        if f'{rescore_program}_rescoring.csv' in os.listdir(
+                rescoring_results_path):
+            print(f'{rescore_program} is already read')
+            return
 
-    if rescore_program in ['cnnscore', 'cnnaffinity', 'smina_affinity']:
-        for path in ['cnnscore', 'cnnaffinity', 'smina_affinity']:
-            rescore_path = rescoring_results_path / path
-            if os.path.exists(rescore_path) and len(
-                    os.listdir(rescore_path)) > 1:
-                break
+        if rescore_program in ['cnnscore', 'cnnaffinity', 'smina_affinity']:
+            for path in ['cnnscore', 'cnnaffinity', 'smina_affinity']:
+                rescore_path = rescoring_results_path / path
+                if os.path.exists(rescore_path) and len(
+                        os.listdir(rescore_path)) > 1:
+                    break
 
-        for sdf in rescore_path.glob('*.sdf'):
+            for sdf in rescore_path.glob('*.sdf'):
 
-            df = read_sdf_values_and_names(sdf)
-            # chech if df is empty
-            if df.empty:
-                continue
-            if 'cnnscore' == rescore_program:
-                df = df[['ID', 'CNNscore']]
+                df = _read_sdf_values_and_names(sdf)
+                # chech if df is empty
+                if df.empty:
+                    continue
+                if 'cnnscore' == rescore_program:
+                    df = df[['ID', 'CNNscore']]
 
-            elif 'cnnaffinity' == rescore_program:
-                df = df[['ID', 'CNNaffinity']]
+                elif 'cnnaffinity' == rescore_program:
+                    df = df[['ID', 'CNNaffinity']]
 
-            elif 'smina_affinity' == rescore_program:
-                df = df[['ID', 'minimizedAffinity']]
+                elif 'smina_affinity' == rescore_program:
+                    df = df[['ID', 'minimizedAffinity']]
+                    df.rename(
+                        columns={
+                            'minimizedAffinity': 'smina_affinity'},
+                        inplace=True)
+                dfs.append(df)
+
+        if 'ad4' == rescore_program:
+            for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
+                df = _read_sdf_values_and_names(sdf)[['ID', 'minimizedAffinity']]
+                df.rename(columns={'minimizedAffinity': 'ad4'}, inplace=True)
+                dfs.append(df)
+
+        if 'linf9' == rescore_program:
+            for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
+                df = _read_sdf_values_and_names(sdf)[['ID', 'minimizedAffinity']]
+                df.rename(columns={'minimizedAffinity': 'LinF9'}, inplace=True)
+                dfs.append(df)
+
+        if 'vinardo' == rescore_program:
+            for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
+                df = _read_sdf_values_and_names(sdf)[['ID', 'minimizedAffinity']]
+                df.rename(columns={'minimizedAffinity': 'Vinardo'}, inplace=True)
+                dfs.append(df)
+
+        if 'rfscore_v1' == rescore_program:
+            for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
+                df = _read_sdf_values_and_names(sdf)[['ID', 'rfscore_v1']]
+                # df.rename(columns={'minimizedAffinity': 'Vinardo'}, inplace=True)
+                dfs.append(df)
+
+        if 'rfscore_v2' == rescore_program:
+            for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
+                df = _read_sdf_values_and_names(sdf)[['ID', 'rfscore_v2']]
+                # df.rename(columns={'minimizedAffinity': 'Vinardo'}, inplace=True)
+                dfs.append(df)
+
+        if 'rfscore_v3' == rescore_program:
+            for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
+                df = _read_sdf_values_and_names(sdf)[['ID', 'rfscore_v3']]
+                # df.rename(columns={'minimizedAffinity': 'Vinardo'}, inplace=True)
+                dfs.append(df)
+
+        if rescore_program in ['vina_hydrophobic', 'vina_intra_hydrophobic']:
+            if os.path.exists(rescoring_results_path / 'rfscore_v3'):
+                rescore_path = rescoring_results_path / 'rfscore_v3'
+            else:
+                rescore_path = rescoring_results_path / rescore_program
+
+            for sdf in rescore_path.glob('*.sdf'):
+                df = _read_sdf_values_and_names(sdf)
+
+                if 'vina_hydrophobic' == rescore_program:
+                    df = df[['ID', 'vina_hydrophobic']]
+
+                elif 'vina_intra_hydrophobic' == rescore_program:
+                    df = df[['ID', 'vina_intra_hydrophobic']]
+                else:
+                    df = df[['ID', 'vina_hydrophobic', 'vina_intra_hydrophobic']]
+                # df.rename(columns={'minimizedAffinity': 'Vinardo'}, inplace=True)
+                dfs.append(df)
+
+        if 'rtmscore' == rescore_program:
+            for csv_file in (
+                    rescoring_results_path /
+                    rescore_program).glob('*.csv'):
+                df = pd.read_csv(csv_file)
+                # split Pose ID column with - to remove last number
+                df['id'] = df['id'].str.split('-').str[0]
+                df.rename(columns={'id': 'ID', 'score': 'RTMScore'}, inplace=True)
+                dfs.append(df)
+
+        if 'chemplp' == rescore_program:
+            for dir in (os.listdir(rescoring_results_path / rescore_program)):
+                df = pd.read_csv(rescoring_results_path /
+                                rescore_program /
+                                dir /
+                                'ranking.csv')[['LIGAND_ENTRY', 'TOTAL_SCORE']]
+                # df = PandasTools.LoadSDF(str(sdf))[['ID', 'CHEMPLP']]
                 df.rename(
                     columns={
-                        'minimizedAffinity': 'smina_affinity'},
+                        'LIGAND_ENTRY': 'Pose ID',
+                        'TOTAL_SCORE': 'CHEMPLP'},
                     inplace=True)
-            dfs.append(df)
+                df['Pose ID'] = df['Pose ID'].str.split('_').str[0:3].str.join('_')
+                df.rename(columns={'Pose ID': 'ID'}, inplace=True)
+                dfs.append(df)
 
-    if 'ad4' == rescore_program:
-        for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
-            df = read_sdf_values_and_names(sdf)[['ID', 'minimizedAffinity']]
-            df.rename(columns={'minimizedAffinity': 'ad4'}, inplace=True)
-            dfs.append(df)
+        if 'scorch' == rescore_program:
+            for csv_file in (
+                    rescoring_results_path /
+                    rescore_program).glob('*.csv'):
+                df = pd.read_csv(csv_file)[['Ligand_ID', 'SCORCH_pose_score']]
+                df['ID'] = PandasTools.LoadSDF(str(
+                    rescoring_results_path.parent / 'sdf_split' / f"{df.loc[0, 'Ligand_ID']}.sdf"))['ID']
+                df.rename(columns={'SCORCH_pose_score': 'SCORCH'}, inplace=True)
+                dfs.append(df.drop(columns=['Ligand_ID']))
 
-    if 'linf9' == rescore_program:
-        for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
-            df = read_sdf_values_and_names(sdf)[['ID', 'minimizedAffinity']]
-            df.rename(columns={'minimizedAffinity': 'LinF9'}, inplace=True)
-            dfs.append(df)
+        if 'hyde' == rescore_program:
+            for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
+                df = _read_sdf_values_and_names(
+                    sdf)[['ID', 'BIOSOLVEIT.HYDE_ESTIMATED_AFFINITY_LOWER_BOUNDARY [nM]']]
+                df.rename(
+                    columns={
+                        'BIOSOLVEIT.HYDE_ESTIMATED_AFFINITY_LOWER_BOUNDARY [nM]': 'HYDE'},
+                    inplace=True)
+                dfs.append(df)
 
-    if 'vinardo' == rescore_program:
-        for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
-            df = read_sdf_values_and_names(sdf)[['ID', 'minimizedAffinity']]
-            df.rename(columns={'minimizedAffinity': 'Vinardo'}, inplace=True)
-            dfs.append(df)
-
-    if 'rfscore_v1' == rescore_program:
-        for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
-            df = read_sdf_values_and_names(sdf)[['ID', 'rfscore_v1']]
-            # df.rename(columns={'minimizedAffinity': 'Vinardo'}, inplace=True)
-            dfs.append(df)
-
-    if 'rfscore_v2' == rescore_program:
-        for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
-            df = read_sdf_values_and_names(sdf)[['ID', 'rfscore_v2']]
-            # df.rename(columns={'minimizedAffinity': 'Vinardo'}, inplace=True)
-            dfs.append(df)
-
-    if 'rfscore_v3' == rescore_program:
-        for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
-            df = read_sdf_values_and_names(sdf)[['ID', 'rfscore_v3']]
-            # df.rename(columns={'minimizedAffinity': 'Vinardo'}, inplace=True)
-            dfs.append(df)
-
-    if rescore_program in ['vina_hydrophobic', 'vina_intra_hydrophobic']:
-        if os.path.exists(rescoring_results_path / 'rfscorevs_v3'):
-            rescore_path = rescoring_results_path / 'rfscorevs_v3'
-        else:
-            rescore_path = rescoring_results_path / rescore_program
-
-        for sdf in rescore_path.glob('*.sdf'):
-            df = read_sdf_values_and_names(sdf)
-
-            if 'vina_hydrophobic' == rescore_program:
-                df = df[['ID', 'vina_hydrophobic']]
-
-            elif 'vina_intra_hydrophobic' == rescore_program:
-                df = df[['ID', 'vina_intra_hydrophobic']]
-            else:
-                df = df[['ID', 'vina_hydrophobic', 'vina_intra_hydrophobic']]
-            # df.rename(columns={'minimizedAffinity': 'Vinardo'}, inplace=True)
-            dfs.append(df)
-
-    if 'rtmscore' == rescore_program:
-        for csv_file in (
-                rescoring_results_path /
-                rescore_program).glob('*.csv'):
-            df = pd.read_csv(csv_file)
-            # split Pose ID column with - to remove last number
-            df['id'] = df['id'].str.split('-').str[0]
-            df.rename(columns={'id': 'ID', 'score': 'RTMScore'}, inplace=True)
-            dfs.append(df)
-
-    if 'chemplp' == rescore_program:
-        for dir in (os.listdir(rescoring_results_path / rescore_program)):
-            df = pd.read_csv(rescoring_results_path /
-                             rescore_program /
-                             dir /
-                             'ranking.csv')[['LIGAND_ENTRY', 'TOTAL_SCORE']]
-            # df = PandasTools.LoadSDF(str(sdf))[['ID', 'CHEMPLP']]
-            df.rename(
-                columns={
-                    'LIGAND_ENTRY': 'Pose ID',
-                    'TOTAL_SCORE': 'CHEMPLP'},
-                inplace=True)
-            df['Pose ID'] = df['Pose ID'].str.split('_').str[0:3].str.join('_')
-            df.rename(columns={'Pose ID': 'ID'}, inplace=True)
-            dfs.append(df)
-
-    if 'scorch' == rescore_program:
-        for csv_file in (
-                rescoring_results_path /
-                rescore_program).glob('*.csv'):
-            df = pd.read_csv(csv_file)[['Ligand_ID', 'SCORCH_pose_score']]
-            df['ID'] = PandasTools.LoadSDF(str(
-                rescoring_results_path.parent / 'sdf_split' / f"{df.loc[0, 'Ligand_ID']}.sdf"))['ID']
-            df.rename(columns={'SCORCH_pose_score': 'SCORCH'}, inplace=True)
-            dfs.append(df.drop(columns=['Ligand_ID']))
-
-    if 'hyde' == rescore_program:
-        for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
-            df = read_sdf_values_and_names(
-                sdf)[['ID', 'BIOSOLVEIT.HYDE_ESTIMATED_AFFINITY_LOWER_BOUNDARY [nM]']]
-            df.rename(
-                columns={
-                    'BIOSOLVEIT.HYDE_ESTIMATED_AFFINITY_LOWER_BOUNDARY [nM]': 'HYDE'},
-                inplace=True)
-            dfs.append(df)
-
-    print(rescore_program, (rescoring_results_path / rescore_program))
-    csv_file = pd.concat(dfs, ignore_index=True)
-    csv_file.to_csv(
-        rescoring_results_path /
-        rescore_program /
-        f'{rescore_program}_rescoring.csv',
-        index=False)
+        csv_file = pd.concat(dfs, ignore_index=True)
+        csv_file.to_csv(
+            rescoring_results_path /
+            rescore_program /
+            f'{rescore_program}_rescoring.csv',
+            index=False)
+        
+    except Exception as e:
+        print(f'❗❗Error in reading {rescore_program} results: {e}')
+        print(f'{rescore_program} could be not excuted')
 
 
-def merge_rescoring_results(
+
+
+def _merge_rescoring_results(
         rescoring_results_path,
         rescore_programs
 ):
@@ -846,7 +837,7 @@ def merge_rescoring_results(
 
     return merged_df
 
-def clean_rescoring_results(rescore_programs, rescoring_results_path):
+def _clean_rescoring_results(rescore_programs, rescoring_results_path):
     """
     This function is to remove unncessary files and dirs. It takes the following arguments:
     Args:

@@ -18,11 +18,12 @@ from tqdm.auto import tqdm
 
 
 def plipify_fp_interaction(
-        ligands_path,
-        protein_path,
-        protein_name,
-        chains,
-        output_file):
+        ligands_path:Path,
+        protein_path:Path,
+        protein_name: str,
+        chains: list,
+        output_file:Path
+        ) -> dict:
     '''
     This function loads ligands and protein using pymol script commands and save both protein and ligand as a complex as pdb file.
     It splits Chain C and D to separate pdb file and change ligand according to chain.
@@ -38,9 +39,9 @@ def plipify_fp_interaction(
         mol_interx_fp: Dict of all interactions
     '''
     if isinstance(ligands_path, Path):
-        ligand_pdb_paths = [sdf2pdb_preprocessing(ligands_path)]
+        ligand_pdb_paths = [_sdf2pdb_preprocessing(ligands_path)]
     elif len(ligands_path) > 1:
-        ligand_pdb_paths = [sdf2pdb_preprocessing(sdf) for sdf in ligands_path]
+        ligand_pdb_paths = [_sdf2pdb_preprocessing(sdf) for sdf in ligands_path]
         ligand_protein_cpx_paths = [
             ligand_protein_complex(ligand_pdb, protein_path, protein_name, chains)[0]
             for ligand_pdb in ligand_pdb_paths
@@ -62,7 +63,7 @@ def plipify_fp_interaction(
                     Structure.from_pdbfile(
                         str(cpx), ligand_name="HIT")]
                 fp = InteractionFingerprint().calculate_fingerprint(
-                    prepared_cpx,  # see comment above excluded Mpro-z structure
+                    prepared_cpx,
                     labeled=True,
                     as_dataframe=True,
                     remove_non_interacting_residues=True,
@@ -84,14 +85,20 @@ def plipify_fp_interaction(
             os.remove(f'/tmp/{cpx.stem}_protonated.pdb')
             # os.remove(str(cpx))
         mol_interx_fp[ligand_pdb.stem] = interaction_fp
-        # remove directory of ligand protein complex
-    print(f"{ligands_path[0].parent}")
-    # shutil.rmtree(ligands_path[0].parent)
+    shutil.rmtree(ligands_path[0].parent)
     return mol_interx_fp
 
 
-def interaction_fp_generator(complex_path, output_path):
-    # complex_files = list(Path(ligands_path / "ligand_protein_complex").glob(f"*{chain}.pdb"))
+def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFrame:
+    """
+    This function takes a path of complex pdb files and create a fingerprint 
+    of the interactions
+    Args:
+        complex_path: path of the complex pdb files
+        output_path: path of the output png file
+    Returns:
+        fp_focused: DataFrame of the interactions
+    """
 
     if os.path.exists(output_path):
         print(f'Fingerprint Interactions are already saved in png {output_path}')
@@ -118,59 +125,17 @@ def interaction_fp_generator(complex_path, output_path):
 
     return fp_focused
 
+def split_sdf_path(sdf_path: Path) -> list:
+    """
+    This function takes a path of sdf file and split it into multiple sdf files 
+    with the same name of the ligand
 
-def create_2dposeview(docked_group, docking_method):
-    '''''
-    This function takes a path of sdf files and create 2D interaction images for each sdf file
-    @Param :
-    docked_group --> name of the sdf file without the extension
-    @Output :
-    2D interaction images for each sdf file in 2D_interactions folder
-    '''''
-    if len(os.listdir(f"dcc_data/{docked_group}/2D_interactions")) != 0:
-        print(f"Skipping {docked_group}, already exists")
-        return
-    if docking_method == 'gnina':
-        predicted_score = 'CNNaffinity'
-    elif docking_method == 'seesar':
-        predicted_score = 'BIOSOLVEIT.HYDE_ESTIMATED_AFFINITY_LOWER_BOUNDARY [nM]'
+    Args :
+        sdf_path: path of sdf file
 
-    # if os.path.exists(f"dcc_data/{docked_group}/2D_interactions"):
-    #     return
-    # create folder for the photos
-    os.makedirs(f"dcc_data/{docked_group}/2D_interactions", exist_ok=True)
-    # create list of all sdf files in the folder
-
-    sdf_files = glob.glob(f"dcc_data/{docked_group}/*.sdf")
-    for sdf in sdf_files:
-        try:
-            predicted_affinity = float(
-                PandasTools.LoadSDF(sdf)[predicted_score][0])
-            float(PandasTools.LoadSDF(
-                'dcc_data/docked_gnina_pose_A_hittwo_30pose/HIPS6706_11.sdf')['CNNaffinity'][0])
-        except BaseException:
-            print(f"Error in {sdf}, no {predicted_score} column")
-        # if 2d_interactions folder is not empty, skip the sdf file
-
-        os.system(
-            f"./software/poseview-1.1.2-Linux-x64/poseview"
-            f" -l {sdf} "
-            " -p data/A/protein_protoss_noligand.pdb"
-            f" -o dcc_data/{docked_group}/2D_interactions/{Path(sdf).stem}.png"
-            f" -t {Path(sdf).stem}:{predicted_affinity:.2f}"
-        )
-
-
-def split_sdf_path(sdf_path):
-    '''''
-    This function takes a path of sdf file and split it into multiple sdf files with the same name of the ligand
-
-    @Param :
-    sdf_path --> path of sdf file
-
-    @Return :
-    path of a directory contains splitted molecules of sdf file
-    '''''
+    Returns :
+        path of a directory contains splitted molecules of sdf file
+    """
 
     ligands_path = []
     output_dir = Path(sdf_path).parent / Path(sdf_path).stem
@@ -198,7 +163,7 @@ def split_sdf_path(sdf_path):
     return ligands_path
 
 
-def sdf2pdb_preprocessing(sdf_file):
+def _sdf2pdb_preprocessing(sdf_file:Path) -> Path:
     """
     This function takes a path of sdf file and convert it to pdb file
     Args:
@@ -218,7 +183,22 @@ def sdf2pdb_preprocessing(sdf_file):
     # load protein and ligand and save as pdb file
 
 
-def ligand_protein_complex(ligand_path, protein_path, protein_name, chains):
+def ligand_protein_complex(
+        ligand_path:Path, 
+        protein_path:Path, 
+        protein_name: str, 
+        chains: list
+        ) -> list:
+    """
+    This function takes a path of ligand and protein and save them as a complex pdb file
+    Args:
+        ligand_path: path of ligand in pdb format
+        protein_path: path of protein in pdb format
+        protein_name: name of protein
+        chains: list of chains to split
+    Returns:
+        list of paths of the complex pdb files
+    """
     ligand_name = ligand_path.stem
     ligand_protein_dir = ligand_path.parent / "ligand_protein_complex"
 
@@ -262,34 +242,48 @@ def ligand_protein_complex(ligand_path, protein_path, protein_name, chains):
     return ligand_protein_cpx_chains
 
 
-def read_interactions_json(json_file, output_file):
-
+def read_interactions_json(json_file:Path, output_file:Path) -> pd.DataFrame:
+    """
+    This function reads the interactions from a JSON file and convert it to a CSV file
+    Args:
+        json_file: path of the JSON file
+        output_file: path of the output CSV file
+    Returns:
+        interactions_df: DataFrame of the interactions
+    """
     if os.path.exists(output_file):
         print('Interactions are converted to CSV file.')
         df = pd.read_csv(output_file)
         return df
     with open(json_file, 'r') as file:
-        # Parsing the JSON data into a Python dictionary
         interactions_dict = json.load(file)
-
     flattened = [(cpd, resi)
                  for resi, cpds in interactions_dict.items() for cpd in cpds]
-
     flattened_df = pd.DataFrame(flattened, columns=['Poses', 'Residues'])
     interactions_df = flattened_df.pivot_table(
         index='Poses', columns='Residues', aggfunc=len, fill_value=0)
-
     interactions_df.to_csv(output_file)
     return interactions_df
 
 
 def indiviudal_interaction_fp_generator(
-        sdfs_path,
-        protein_file,
-        protein_name,
-        included_chains,
-        output_dir
-        ):
+        sdfs_path: list[Path],
+        protein_file: Path,
+        protein_name: str,
+        included_chains: list,
+        output_dir: Path
+        ) -> dict:
+    """
+    This function takes a list of sdf files and generate a fingerprint of the interactions
+    Args:
+        sdfs_path: list of sdf files
+        protein_file: path of the protein in pdb format
+        protein_name: name of the protein
+        included_chains: list of chains to split
+        output_dir: path of the output directory
+    Returns:
+        allposes_interaction_fp: Dict of all interactions
+    """
     if os.path.exists(output_dir):
         print('Interactions for all poses are already executed')
         return output_dir
@@ -306,7 +300,13 @@ def indiviudal_interaction_fp_generator(
     return allposes_interaction_fp
 
 
-def _write_json(allposes_interaction_fp, output_path):
+def _write_json(allposes_interaction_fp: pd.DataFrame, output_path: str):
+    """
+    This function writes the interactions to a JSON file
+    Args:
+        allposes_interaction_fp: DataFrame of the interactions
+        output_path: path of the output JSON file
+    """
     residue_to_compounds = {}
     for compound, residues in allposes_interaction_fp.items():
         for residue in residues:
@@ -319,51 +319,46 @@ def _write_json(allposes_interaction_fp, output_path):
 
     print(f"JSON file saved to {output_path}")
 
-# def interx_filtering(interx_fp_path):
-
-#     inhouse_interactions = pd.read_csv(str(interx_fp_path)).T
-#     residues = pd.unique(inhouse_interactions[inhouse_interactions.columns].values.ravel('K'))
-#     residues = residues[~pd.isna(residues)]
-#     residue_df = pd.DataFrame(0, index=inhouse_interactions.index, columns=residues)
-#     for index, row in inhouse_interactions.iterrows():
-#         for residue in residues:
-#             if residue in row.values:
-#                 residue_df.at[index, residue] = 1
-#     residue_df.loc['frequency'] = residue_df.sum(axis=0)
-
-#     return residue_df
-
-
 def interactions_aggregation(
-        interactions_df,
-        important_interactions,
-        id_column='ID'):
+        interactions_df: pd.DataFrame,
+        important_interactions: list,
+        id_column:str='ID'
+        ) -> pd.DataFrame:
+    """
+    This function aggregates the interactions based on the important interactions
+    Args:
+        interactions_df: DataFrame of the interactions
+        important_interactions: list of important interactions
+        id_column: column name of the ID
+    Returns:
+        aggregated_df: DataFrame of the aggregated interactions
+    """
     interactions_df['id'] = interactions_df[id_column].str.split('_').str[0]
     aggregated_df = interactions_df.groupby('id').sum()
     return aggregated_df[important_interactions].reset_index()
 
 
-def interx_plot(residue_df, imp_interactions):
-    if not imp_interactions:
-        imp_interactions = residue_df.columns
-    sns.set_theme(style="whitegrid")
-    plt.figure(figsize=(20, 10))
-    ax = sns.barplot(x=imp_interactions,
-                     y=residue_df.loc['frequency', imp_interactions])
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
-    ax.set_title('Frequency of each residue in HIPS dataset')
-    ax.set_ylabel('Frequency')
-    ax.set_xlabel('Residue')
-    plt.tight_layout()
-    plt.show()
-
+# def interx_plot(residue_df, imp_interactions):
+#     if not imp_interactions:
+#         imp_interactions = residue_df.columns
+#     sns.set_theme(style="whitegrid")
+#     plt.figure(figsize=(20, 10))
+#     ax = sns.barplot(x=imp_interactions,
+#                      y=residue_df.loc['frequency', imp_interactions])
+#     ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+#     ax.set_title('Frequency of each residue in HIPS dataset')
+#     ax.set_ylabel('Frequency')
+#     ax.set_xlabel('Residue')
+#     plt.tight_layout()
+#     plt.show()
 
 def actives_extraction(
         test_set_docked_path,
         merged_rescoring_path,
         docking_tool):
     """
-    This function filters the actives from the docking poses based on a threshold of the true value and the selected docking tool
+    This function filters the actives from the docking poses based on a threshold 
+    of the true value and the selected docking tool
     Args:
         test_set_docked_path: str, path to the sdf file of the docking poses
         merged_rescoring_path: str, path to the csv file of the merged rescoring results

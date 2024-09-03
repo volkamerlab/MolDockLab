@@ -7,6 +7,7 @@ import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import PandasTools
 from tqdm.auto import tqdm
+import logging
 
 from src.preprocessing import plants_preprocessing
 from src.utilities import (
@@ -426,13 +427,13 @@ def _diffdock_docking(
 
     for id, smiles in tqdm(zip(molecule_id, ligands),
                            total=len(molecule_id),
-                           desc='Local DiffDock is running ...'):
+                           desc='DiffDock / Local DiffDock is running ...'):
         diffdock_cmd = (
             f"python -m inference"
             f" --protein_path {str(protein_file)}"
             f" --ligand '{smiles}'"
-            f" --complex_name results/diffdock/{id}"
-            f" --out_dir {str(protein_file.parent)}"
+            f" --complex_name {id}"
+            f" --out_dir {str(sdf_output.parent)}"
             f" --inference_steps 20"
             f" --samples_per_complex {n_poses}"
             f" --batch_size 8"
@@ -441,7 +442,7 @@ def _diffdock_docking(
         )
         # check for all poses
         if (sdf_output / 'diffdock_poses.sdf').exists():
-            print('Poses are already generated using DiffDock / Local DiffDock')
+            print('Poses are already generated using DiffDock or Local DiffDock')
             break
         if local_diffdock:
             diffdock_cmd += f" --binding_site_residues {str(protein_file.parent / pocket_res_indices)}"

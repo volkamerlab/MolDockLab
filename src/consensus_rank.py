@@ -14,7 +14,7 @@ def method1_ECR_best(
     Args:
         df (DataFrame): The dataframe containing the rescored poses
         weight (float): The inclusion threshold for the poses
-        selected_scores (list): The list of columns to be used for calculating the ECR
+        selected_scores (list): The list of columns to be used for calculating the ECR best
         id_column (str): The column containing the ID of the poses
     Returns:
         DataFrame: The dataframe containing the ID and the best ECR score for each pose
@@ -43,7 +43,7 @@ def method2_ECR_average(
     Args:
         df (DataFrame): The dataframe containing the rescored poses
         weight (float): The inclusion threshold for the poses
-        selected_scores (list): The list of columns to be used for calculating the ECR
+        selected_scores (list): The list of columns to be used for calculating the ECR average
         id_column (str): The column containing the ID of the poses
     Returns:
         DataFrame: The dataframe containing the ID and the best ECR score for each pose
@@ -72,7 +72,7 @@ def method3_avg_ECR(
     Args:
         df (DataFrame): The dataframe containing the rescored poses
         weight (float): The inclusion threshold for the poses
-        selected_scores (list): The list of columns to be used for calculating the ECR
+        selected_scores (list): The list of columns to be used for calculating the average ECR
         id_column (str): The column containing the ID of the poses
     Returns:
         DataFrame: The dataframe containing the ID and the best ECR score for each pose
@@ -99,7 +99,7 @@ def method4_RbR(
     Args:
         df (DataFrame): The dataframe containing the rescored poses
         weight (float): The inclusion threshold for the poses
-        selected_scores (list): The list of columns to be used for calculating the ECR
+        selected_scores (list): The list of columns to be used for calculating the Rank by Rank
         id_column (str): The column containing the ID of the poses
     Returns:
         DataFrame: The dataframe containing the ID and the best ECR score for each pose
@@ -125,7 +125,7 @@ def method5_RbV(
     Args:
         df (DataFrame): The dataframe containing the rescored poses
         weight (float): The inclusion threshold for the poses
-        selected_scores (list): The list of columns to be used for calculating the ECR
+        selected_scores (list): The list of columns to be used for calculating the Rank by Vote
         id_column (str): The column containing the ID of the poses
     Returns:
         DataFrame: The dataframe containing the ID and the best ECR score for each pose
@@ -156,7 +156,7 @@ def method6_Zscore_best(
     Args:
         df (DataFrame): The dataframe containing the rescored poses
         weight (float): The inclusion threshold for the poses
-        selected_scores (list): The list of columns to be used for calculating the ECR
+        selected_scores (list): The list of columns to be used for calculating the Z-score best
         id_column (str): The column containing the ID of the poses
     Returns:
         DataFrame: The dataframe containing the ID and the best ECR score for each pose
@@ -187,7 +187,7 @@ def method7_Zscore_avg(
     Args:
         df (DataFrame): The dataframe containing the rescored poses
         weight (float): The inclusion threshold for the poses
-        selected_scores (list): The list of columns to be used for calculating the ECR
+        selected_scores (list): The list of columns to be used for calculating the Z-score average
         id_column (str): The column containing the ID of the poses
     Returns:
         DataFrame: The dataframe containing the ID and the best ECR score for each pose
@@ -212,7 +212,7 @@ def method8_RbN(
     Args:
         df (DataFrame): The dataframe containing the rescored poses
         weight (float): The inclusion threshold for the poses
-        selected_scores (list): The list of columns to be used for calculating the ECR
+        selected_scores (list): The list of columns to be used for Rank by Number
         id_column (str): The column containing the ID of the poses
     Returns:
         DataFrame: The dataframe containing the ID and the best ECR score for each pose
@@ -234,7 +234,7 @@ def method9_weighted_ECR_best(
     in the rescored dataframe and returns the ID for the pose with the best ECR rank.
     Args:
         df (DataFrame): The dataframe containing the rescored poses
-        selected_scores (list): The list of columns to be used for calculating the ECR
+        selected_scores (list): The list of columns to be used for calculating the weighted ECR
         id_column (str): The column containing the ID of the poses
         mapped_weights (dict): The dictionary containing the weights for each column
     Returns:

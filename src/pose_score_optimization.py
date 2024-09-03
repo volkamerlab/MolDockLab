@@ -106,19 +106,20 @@ def prediction(c_r: torch.Tensor, c_d:torch.Tensor, X: torch.Tensor) -> torch.Te
     return (X * c_r * c_d).nan_to_num().sum(1).sum(1)
 
 
-def prepare_parameters(x: np.array) -> tuple:
+def prepare_parameters(x: np.array, num_docking_tools: int) -> tuple:
     """
     Prepare the parameters for the optimization
     Args(np.array):
         x: np.array of shape (20), the weights for the scoring function
+        num_docking_tools: int, the number of docking tools
     Returns:
         c_r(torch.Tensor): torch.Tensor of shape (1, 1, 15), the weights for the rescoring function
         c_d(torch.Tensor): torch.Tensor of shape (1, 5, 1), the weights for the docking function
     """
     c = torch.tensor(x)
 
-    c_r = c[:-5].reshape(1, 1, -1)
-    c_d = c[-5:].reshape(1, -1, 1)
+    c_r = c[:-num_docking_tools].reshape(1, 1, -1)
+    c_d = c[-num_docking_tools:].reshape(1, -1, 1)
 
     return c_r, c_d
 
@@ -146,7 +147,7 @@ def loss(
         loss: float, the loss
     """
     c = torch.tensor(x_rand)
-    c_r, c_d = prepare_parameters(c)
+    c_r, c_d = prepare_parameters(c, X.shape[1])
     model_loss = ((prediction(c_r, c_d, X) - y) ** 2).mean().item()
     regularization = ((c_d * docking_cost).abs().sum() +
                       (c_r * scoring_cost).abs().sum())
@@ -194,7 +195,8 @@ def optimize_score(
                 y,
                 docking_cost,
                 scoring_cost,
-                reg),
+                reg
+                ),
             method='Nelder-Mead')
         losses.append(res.fun)
         weights.append(res.x)
@@ -230,12 +232,10 @@ def score_pose_optimization(
         return best_weights
 
     best_weights = {}
-    if alpha is float:
-        alphas = [alpha]
+
     for alpha in alphas:
         print(f'Optimization with Regularization: {alpha}')
-        losses, weights = optimize_score(
-            X, y, docking_cost, scoring_cost, reg=alpha, iter=iter)
+        losses, weights = optimize_score(X, y, docking_cost, scoring_cost, reg=alpha, iter=iter)
         min_loss_idx = np.argmin(losses)
         best_weights[alpha] = weights[min_loss_idx]
     np.save(str(weights_path), best_weights)

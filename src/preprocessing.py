@@ -15,12 +15,12 @@ from src.utilities import handling_multicollinearity, run_command
 
 def  merge_activity_values(
     norm_scored_path : Path,
-    true_value_path : Path,
+    mols_true_value_path : Path,
     true_value_col : str,
     scored_id_col : str,
-    activity_col : str,
-    lower_better_true_value : bool,
-    threshold : float
+    activity_col : str = "activity_class",
+    lower_better_true_value : bool = False,
+    threshold : float = 0.9
     ) -> pd.DataFrame:
     """
     Merging the experimental values and the activity class to the normalized scores of scoring function
@@ -28,11 +28,11 @@ def  merge_activity_values(
     Args:
         norm_scored_path (pathlib.Path) : Path of normalized scores in csv format with ID contains name
                 of the compound, docking tool and number of the pose, e.g. XXXX_plants_01
-        true_value_path (pathlib.Path) : Path of true value in SDF format with the unique ID
+        mols_true_value_path (pathlib.Path) : Path of true value in SDF format with the unique ID
         true_value_col (str) : column name of experimental value
         unique_id_col (str) : column name of ID
         activity_col (str) : column name of activity class
-        threshol (float) : correlation threshold
+        threshold (float) : correlation threshold
 
     Return:
         DataFrame with experimental values and activity classes aligned with scores from scoring functions
@@ -47,7 +47,7 @@ def  merge_activity_values(
             continue
     df_rescored[['id', 'docking_tool', 'pose']
                 ] = df_rescored[scored_id_col].str.split('_', expand=True)
-    true_values_df = PandasTools.LoadSDF(str(true_value_path))
+    true_values_df = PandasTools.LoadSDF(str(mols_true_value_path))
 
     for _, group in df_rescored.groupby(['id']):
         group.loc[:, true_value_col] = true_values_df[true_values_df['ID']
@@ -66,13 +66,13 @@ def  merge_activity_values(
     df_rescored.drop(['pose'], axis=1, inplace=True)
     df_rescored.rename(columns={true_value_col: 'true_value'}, inplace=True)
 
-    not_collinear_df = handling_multicollinearity(
-        df_rescored,
+    collinear_sfs = handling_multicollinearity(
+        df_rescored.drop([activity_col], axis=1),
         threshold=threshold,
         true_value_col='true_value'
     )
-
-    not_collinear_df.to_csv(str(norm_scored_path.parent / 'all_rescoring_results_merged.csv'), index=False)
+    df_rescored.drop(collinear_sfs, axis=1, inplace=True)
+    df_rescored.to_csv(str(norm_scored_path.parent / 'all_rescoring_results_merged.csv'), index=False)
     return df_rescored
 
 
@@ -87,7 +87,7 @@ def _get_scaffold(mol : Chem.Mol) ->Chem.rdchem.Mol:
     return MurckoScaffold.GetScaffoldForMol(mol)
 
 
-def _get_fp(scaffold : Chem.Mol) -> np.ndarray:
+def get_fp(scaffold : Chem.Mol) -> np.ndarray:
     """
     Get the Morgan fingerprint of a molecule
     Args:

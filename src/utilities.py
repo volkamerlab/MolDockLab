@@ -23,8 +23,8 @@ def run_command(cmd: str):
     try:
         subprocess.call(cmd,
                         shell=True,
-                        # stdout=subprocess.DEVNULL,
-                        # stderr=subprocess.STDOUT
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.STDOUT
                         )
     except Exception as e:
         print(e)
@@ -331,7 +331,7 @@ def handling_multicollinearity(
     """
 
     corr_matrix = _generate_correlation_matrix(df)
-    display(corr_matrix.style.background_gradient(cmap='coolwarm'))
+    # display(corr_matrix.style.background_gradient(cmap='coolwarm'))
     pairs = check_correlation_pairs(corr_matrix, threshold)
     columns_to_remove = set()
     for col1, col2 in pairs:
@@ -342,9 +342,8 @@ def handling_multicollinearity(
             columns_to_remove.add(col2)
         else:
             columns_to_remove.add(col1)
-    print(f"Scores of {columns_to_remove} were found to highly correlate. Therefore, they are removed")
-    df.drop(columns=list(columns_to_remove), inplace=True)
-    return df
+    print(f"Scores of {columns_to_remove} were found to highly correlate. Therefore, they are removed.")
+    return columns_to_remove
 
 def split_list(input_list : list, num_splits : int) -> list:
     """

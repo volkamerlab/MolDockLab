@@ -11,8 +11,12 @@ import pandas as pd
 from rdkit.Chem import PandasTools
 
 from src.preprocessing import plants_preprocessing
-from src.utilities import (any_in_list, pdb_converter,
-                       pocket_coordinates_generation, run_command, split_sdf)
+from src.utilities import (
+                    pdb_converter,
+                    pocket_coordinates_generation, 
+                    run_command, 
+                    split_sdf
+                    )
 
 
 def rescoring_function(
@@ -147,10 +151,8 @@ def _smina_rescoring(
     Returns:
         The command to run the SMINA rescoring function
     """
-
-    if any_in_list(['cnnaffinity', 'cnnscore'],
-                   os.listdir((output_path.parent).parent)):
-        print(f'{docked_library_path.name} is already excuted')
+    if ((output_path.parent).parent / 'cnnaffinity' / 'cnnaffinity_0.sdf').is_file():
+        print(f'{output_path.name} is already excuted')
         return
     else:
         return (
@@ -181,8 +183,7 @@ def _gnina_score_rescoring(
         The command to run the the score of GNINA rescoring function
     """
 
-    if any_in_list(['cnnaffinity', 'smina_affinity'],
-                   os.listdir((output_path.parent).parent)):
+    if ((output_path.parent).parent / 'cnnaffinity' / 'cnnaffinity_0.sdf').is_file():
         print(f'{output_path.name} is already excuted')
         return
     return (
@@ -212,10 +213,6 @@ def _gnina_affinity_rescoring(
     Returns:
         The command to run the GNINA rescoring function
     """
-    if any_in_list(['cnnscore', 'smina_affinity'],
-                   os.listdir((output_path.parent).parent)):
-        print(f'{output_path.name} is already excuted')
-        return
     return (
         './software/gnina'
         f' --receptor {str(protein_path)}'
@@ -659,29 +656,29 @@ def _read_rescoring_results(
         if rescore_program in ['cnnscore', 'cnnaffinity', 'smina_affinity']:
             for path in ['cnnscore', 'cnnaffinity', 'smina_affinity']:
                 rescore_path = rescoring_results_path / path
-                if os.path.exists(rescore_path) and len(
-                        os.listdir(rescore_path)) > 1:
-                    break
+                if os.path.exists(rescore_path):
+                    if (rescore_path / f'{rescore_program}_rescoring.csv').is_file():
+                        break
 
-            for sdf in rescore_path.glob('*.sdf'):
+                for sdf in rescore_path.glob('*.sdf'):
+                    df = _read_sdf_values_and_names(sdf)
+                    print(df)
+                    # chech if df is empty
+                    if df.empty:
+                        continue
+                    if 'cnnscore' == rescore_program:
+                        df = df[['ID', 'CNNscore']]
 
-                df = _read_sdf_values_and_names(sdf)
-                # chech if df is empty
-                if df.empty:
-                    continue
-                if 'cnnscore' == rescore_program:
-                    df = df[['ID', 'CNNscore']]
+                    elif 'cnnaffinity' == rescore_program:
+                        df = df[['ID', 'CNNaffinity']]
 
-                elif 'cnnaffinity' == rescore_program:
-                    df = df[['ID', 'CNNaffinity']]
-
-                elif 'smina_affinity' == rescore_program:
-                    df = df[['ID', 'minimizedAffinity']]
-                    df.rename(
-                        columns={
-                            'minimizedAffinity': 'smina_affinity'},
-                        inplace=True)
-                dfs.append(df)
+                    elif 'smina_affinity' == rescore_program:
+                        df = df[['ID', 'minimizedAffinity']]
+                        df.rename(
+                            columns={
+                                'minimizedAffinity': 'smina_affinity'},
+                            inplace=True)
+                    dfs.append(df)
 
         if 'ad4' == rescore_program:
             for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
@@ -805,7 +802,7 @@ def _merge_rescoring_results(
     """
     This function is to merge the rescoring results. It takes the following arguments:
     Args:
-        rescoring_results_path (str): The path to the rescoring results
+        rescoring_results_path (pathlib.Path): The path to the rescoring results
         rescoring_programs (list): The list of rescoring programs to be used
     Returns:
         Merged rescoring results in csv file
@@ -832,10 +829,10 @@ def _merge_rescoring_results(
         merged_df = pd.merge(merged_df, df, on='ID', how='outer')
     merged_df.drop_duplicates(subset='ID', inplace=True)
     merged_df.to_csv(
-        rescoring_results_path.parent /
+        rescoring_results_path /
         'all_rescoring_results.csv',
         index=False)
-
+    print('\n\nRescoring results are merged successfully 🎉🎉')
     return merged_df
 
 def _clean_rescoring_results(rescoring_programs, rescoring_results_path):

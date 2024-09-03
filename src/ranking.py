@@ -80,7 +80,7 @@ def enrichment_factor_calc(
                         df_copy[column] = pd.to_numeric(df_copy[column])
                 except ValueError:
                         pass
-        df_copy = df.copy().apply(pd.to_numeric, errors='ignore')
+        # df_copy = df.copy().apply(pd.to_numeric, errors='ignore')
         actives_in_percent = np.sum(df_copy.head(included_rows)[activity_class])
         quotient = actives_in_percent / included_rows
         divisor = len(df_copy[df_copy.activity_class == 1]) / len(df_copy)
@@ -126,8 +126,6 @@ def _process_combination(
                 'rank_by_number': method8_RbN,
                 'weighted_ECR': method9_weighted_ECR_best
                 }
-        print(f'Running {ranking_method}...')
-
         df = df_rescored.copy()
         df = df.drop('pose', axis=1)
         ranking_method_name = ranking_methods_dict[ranking_method].__name__

@@ -52,6 +52,7 @@ def get_parser():
     parser.add_argument('--protein_name', type=str, default=None, help='The name of the protein')
     parser.add_argument('--interacting_chains', nargs='+', default=['X'], help='The chains that included in the protein-ligand interactions')
 
+    parser.add_argument('--key_residues', nargs='+', default=None, help='The key residues for protein-ligand interactions to consider in the interaction filtration. If None, The top four frequent interacting residues found in active compounds are considered. added by resdiue number + chain, e.g. 123A 124B , etc')
     parser.add_argument('--docking_programs', nargs='+', default=['gnina', 'smina', 'diffdock', 'plants', 'flexx'], type=str, help='The docking tools to use. The docking tools are gnina, smina, diffdock, plants, and flexx')
     parser.add_argument('--n_poses', default=10, type=int, help='The number of poses to generate per docking tool')
     parser.add_argument('--exhaustiveness', default=8, type=int, help='The exhaustiveness of the docking program for SMINA and GNINA docking tools')
@@ -387,24 +388,64 @@ def main(args):
             interx_csv = OUTPUT / f'{protein_name}_{chain}_interx.csv'
             if interx_csv.is_file():
                 logger.info(f"Protein-ligand interactions with chain {chain} are already saved at {interx_csv}")
+                fp_focused = pd.read_csv(interx_csv)
                 continue
             fp_focused = plipify_fp_interaction(
                 ligands_path=actives_paths, 
                 protein_path=HERE / args.protein_path, 
                 protein_name=protein_name, 
                 chains=chain,
-                output_file=OUTPUT / 'egfr_interactions_X.png'
+                output_file=OUTPUT / f'{protein_name}_interactions_{chain}.png'
                 )
             fp_focused['total_interactions'] = fp_focused.sum(axis=1)
-            fp_focused.to_csv(interx_csv)
+            fp_focused.to_csv(interx_csv, index=False)
             logger.info(f"Protein-ligand interactions with chain {chain} are saved at {interx_csv}")
+
+        for chain in args.interacting_chains:
+            if args.key_residues is None:
+                print(fp_focused)
+                key_interactions_resno = list(fp_focused.sort_values(by='total_interactions', ascending=False).head(4).index)
+                print(key_interactions_resno)
+                key_interactions_resno = [f'{resno}{chain}' for resno in key_interactions_resno]
+            else:
+                key_interactions_resno = args.key_residues
+            logger.info(f"Key interactions with residues are: {key_interactions_resno}")
     except Exception as e:
         logger.error(f"An error occured while performing the interaction analysis: {e}")
         return
     
     logger.info("Filtering compounds with specific interactions ...")
     try:
-         
+        interactions_dict_path = larger_data_output / 'fp_allposes.json'
+        ligands_paths = split_sdf_path(larger_data_output / 'allposes.sdf')
+        allposes_interaction_fp = indiviudal_interaction_fp_generator(sdfs_path=ligands_paths, 
+                                                                    protein_file=args.protein_path, 
+                                                                    protein_name=protein_name, 
+                                                                    included_chains=args.interacting_chains, 
+                                                                    output_dir=interactions_dict_path)
+
+        interactions_df = read_interactions_json(
+                    json_file=interactions_dict_path, 
+                    output_file=larger_data_output / 'allposes_interaction_fps_final.csv'
+                    )
+        agg_interx_df = interactions_aggregation(
+                            interactions_df=interactions_df.reset_index(),
+                            important_interactions=key_interactions_resno,
+                            id_column='Poses'
+                            )
+        agg_interx_df.replace(0, np.nan, inplace=True)
+
+        # Drop rows with any NaN values
+        agg_interx_df.dropna(inplace=True)
+        print(agg_interx_df)
+        agg_interx_df.to_csv(larger_data_output / 'selected_ligands_interaction.csv', index=False)
+        logger.info(f"Selected ligands with specific interactions are saved at {larger_data_output / 'selected_ligands_interaction.csv'}")
+    except Exception as e:
+        logger.error(f"An error occured while filtering compounds with specific interactions: {e}")
+        return
+    
+    # @TODO : Add the diversity selection step and visualize the selected compounds
+    
     # if args.versatility_analysis:
     #     logger.info("Performing the versatility analysis ...")
     #     try:

@@ -51,7 +51,6 @@ def plipify_fp_interaction(
         return fp_focused
     else:
         raise ValueError("No sdf files found")
-
     mol_interx_fp = {}
     for ligand_pdb in ligand_pdb_paths:
         interaction_fp = []
@@ -85,7 +84,7 @@ def plipify_fp_interaction(
             os.remove(f'/tmp/{cpx.stem}_protonated.pdb')
             # os.remove(str(cpx))
         mol_interx_fp[ligand_pdb.stem] = interaction_fp
-    shutil.rmtree(ligands_path[0].parent)
+    # shutil.rmtree(ligands_path[0].parent)
     return mol_interx_fp
 
 
@@ -99,11 +98,7 @@ def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFram
     Returns:
         fp_focused: DataFrame of the interactions
     """
-
-    if os.path.exists(output_path):
-        print(f'Fingerprint Interactions are already saved in png {output_path}')
-        return
-
+    
     structures = [Structure.from_pdbfile(str(pdb),ligand_name="HIT") for pdb in tqdm(complex_path)]
 
     fp = InteractionFingerprint().calculate_fingerprint(
@@ -284,9 +279,10 @@ def indiviudal_interaction_fp_generator(
     Returns:
         allposes_interaction_fp: Dict of all interactions
     """
-    if os.path.exists(output_dir):
+    if output_dir.is_dir():
         print('Interactions for all poses are already executed')
         return output_dir
+    print(f"Generating interactions for {len(sdfs_path)} poses\n\n")
 
     allposes_interaction_fp = {}
     for i, sdf in enumerate(sdfs_path):

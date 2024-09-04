@@ -1,10 +1,10 @@
 # MolDockLab
 
-MolDockLab is a **data-driven workflow** designed to identify the best balanced consensus **Structure-Based Virtual Screening (SBVS)** workflow for a tet of interest. The workflow integrates various **docking tools**, **scoring functions**, and **consensus methods** to achieve optimal screening performance.
+MolDockLab is a **data-driven workflow** designed to identify the best balanced consensus **Structure-Based Virtual Screening (SBVS)** workflow for a target of interest. The workflow integrates various **docking tools**, **scoring functions**, and **consensus methods** to achieve optimal screening performance.
 
 As a validation case study, the workflow was applied to the **EGFR tet** (Epidermal Growth Factor Receptor) to compare different SBVS pipelines and assess their relative performance. Results can be found in `egfr_data/`.
 
-MolDockLab was used in a real case study to find potential hits for an antibacterial tet called **Energy Coupling Factor (ECF) Transporters**, in a collaboration work with Helmholtz-Institut für Pharmazeutische Forschung Saarland (HIPS). By screening the in-house library of around 6.6K compounds, it resulted in the identification of **two new antibacterial classes** for the tet, which were validated experimentally.
+MolDockLab was used in a real case study to find potential hits for an antibacterial tet called **Energy Coupling Factor Transporters (ECF-T)**, in a collaboration work with Helmholtz-Institut für Pharmaceutical Research Saarland (HIPS). Through screening the in-house library of around 6.6K compounds, it resulted in the identification of **two new antibacterial classes** for ECF-T target, which were validated experimentally.
 
 
 <p align="center">
@@ -15,10 +15,10 @@ MolDockLab was used in a real case study to find potential hits for an antibacte
 
 ## Repository Structure
 
-- **`egfr_data/`**: Contains the EGFR-specific data used in the MolDockLab workflow, along with the results generated from running the pipeline.
+- **`egfr_data/`**: Directory contains the EGFR-specific data used in the MolDockLab workflow, along with the results generated from running the pipeline.
 - **`src/`**: The source code directory containing the core implementation of the MolDockLab workflow.
-- **`test_data/`**: A small subset of test data (3 compounds for pipeline selection and 10 compounds for SBVS) used to test the workflow on a smaller scale.
-- **`test_output/`**: Output generated from running the workflow on the test data.
+- **`test_data/`**: Directory contains a small subset of test data (3 compounds for pipeline selection and 10 compounds for SBVS) used to test the workflow on a smaller scale.
+- **`test_output/`**: Directory contains the output generated from running the workflow on the test data.
 - **`EGFR_pipeline.ipynb`**: A Jupyter notebook that reproduces the EGFR tet results. Use this to follow along with the pipeline's analysis for EGFR.
 - **`moldocklab.py`**: The main script that orchestrates the execution of the MolDockLab workflow.
 - **`setup_py310.sh`**: Installation script to set up the Python 3.10 environment and dependencies required to run the workflow.
@@ -31,7 +31,7 @@ Thanks to the [Installation guide of DockM8](https://github.com/DrugBud-Suite/Do
 ```
 bash ./setup_py310.sh
 ```
-For more details or for running on windows, please refer to the the [installation guide of DockM8](https://github.com/DrugBud-Suite/DockM8/blob/main/DockM8_Installation_Guide.pdf)
+For more details or for running on windows, please refer to the the [installation guide of DockM8](https://github.com/DrugBud-Suite/DockM8/blob/main/DockM8_Installation_Guide.pdf).
 
 ---
 ## Usage
@@ -50,7 +50,6 @@ For step-by-step tutorial, the steps in `test_run.ipynb` can be followed.
 All options:
 ```
 -h, --help                Show this help message and exit.
-
 
 Required args:
 
@@ -73,7 +72,7 @@ Optional args:
 
 Docking Options:
 
---docking_programs  [DOCKING_PROGRAMS ...]
+--docking_programs        [DOCKING_PROGRAMS ...]
                           Docking programs to use (allowed_progs: gnina, smina, 
                           diffdock, plants, flexx).
                           Example: --docking_programs gnina smina diffdock
@@ -86,7 +85,7 @@ Docking Options:
 
 Rescoring Options:
 
---rescoring  [RESCORING ...] 
+--rescoring               [RESCORING ...] 
                           Rescoring functions to use.
                           Allowed_SFs: cnnaffinity, cnnscore, smina_affinity, scorch, ad4, 
                           linf9, rtmscore, vinardo, chemplp, rfscore_v1, rfscore_v2,
@@ -97,7 +96,7 @@ Rescoring Options:
 
 Ranking Methods:
 
---ranking_method  [RANKING_METHOD ...]
+--ranking_method          [RANKING_METHOD ...]
                           Consensus ranking methods to use. 
                           Allowed consensus methods: best_ECR, ECR_average, average_ECR, 
                           rank_by_rank, rank_by_vote, rank_by_number, best_Zscore, 
@@ -116,9 +115,9 @@ Pipeline Selection:
 
 Interaction Analysis:
 
---interacting_chains  [INTERACTING_CHAINS ...]
+--interacting_chains      [INTERACTING_CHAINS ...]
                           Chains to include in protein-ligand interactions (default: X).
---key_residues  [KEY_RESIDUES ...]
+--key_residues            [KEY_RESIDUES ...]
                           Key residues for interaction filtration can be given manually 
                           (e.g., "123A 124B"). 
                           If None, the top four frequent interacting residues from 

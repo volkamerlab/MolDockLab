@@ -1,0 +1,6 @@
+ID,method6_Zscore_best,passed_interx_filtration,ROMol,diversity_selection
+CHEMBL4457733,0.9142100628219152,1.0,<rdkit.Chem.rdchem.Mol object at 0x7386b8bafb50>,1
+CHEMBL3425665,0.8055641216148056,1.0,<rdkit.Chem.rdchem.Mol object at 0x7386b8baff40>,1
+CHEMBL5088102,0.4522530453048962,1.0,<rdkit.Chem.rdchem.Mol object at 0x7386b8baf7d0>,1
+CHEMBL4068047,0.3976875250148802,1.0,<rdkit.Chem.rdchem.Mol object at 0x7386b8baf760>,1
+CHEMBL4074615,-0.8287430831826867,1.0,<rdkit.Chem.rdchem.Mol object at 0x7386b8baf920>,1

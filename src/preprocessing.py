@@ -87,7 +87,7 @@ def _get_scaffold(mol : Chem.Mol) ->Chem.rdchem.Mol:
     return MurckoScaffold.GetScaffoldForMol(mol)
 
 
-def get_fp(scaffold : Chem.Mol) -> np.ndarray:
+def _get_fp(scaffold : Chem.Mol) -> np.ndarray:
     """
     Get the Morgan fingerprint of a molecule
     Args:

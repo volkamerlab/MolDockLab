@@ -1,6 +1,7 @@
 import multiprocessing
 import os
 
+from src.utilities import run_command
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import AllChem, PandasTools
@@ -72,7 +73,7 @@ def run_gypsumdl(
     )
 
     if prepared_library_path.name not in os.listdir(str(prepared_library_path.parent)):
-        os.system(gypsum_dl_command)
+        run_command(gypsum_dl_command)
 
         # Clean output data (Remove the first row) and remove old one
         gypsum_df = PandasTools.LoadSDF(

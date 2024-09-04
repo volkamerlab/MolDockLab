@@ -7,10 +7,11 @@ import zipfile
 from pathlib import Path
 
 import pandas as pd
+
+from rdkit import Chem
 from Bio import SeqIO
 from Bio.Data import IUPACData
 from Bio.PDB import PDBParser
-from rdkit import Chem
 from itertools import combinations, product
 
 
@@ -380,28 +381,6 @@ def workflow_combinations(docking_programs: list, rescoring_programs: list) -> l
                                  for item in combinations(sorted(docking_programs), r)]
 
     return list(product(all_comb_docking_program, all_comb_scoring_function))
-
-def get_selected_workflow(row:int, corr_path:Path) -> tuple:
-    """
-    This function takes the row number and the path of the correlation file 
-    and returns the selected docking tools, scoring tools and ranking method.
-    
-    Args:
-        row (int): the row number of the dataframe
-        corr_path (Path): the path of the correlation file
-
-    Returns:
-        tuple: A tuple containing three elements:
-                - docking_tools (list): A list of selected docking tools extracted from the specified row.
-                - scoring_tools (list): A list of selected scoring tools extracted from the specified row.
-                - ranking_method (str): The ranking method used, specified in the same row.
-    """
-    df = pd.read_csv(corr_path)
-    docking_tools = df.iloc[row]['docking_tool']
-    scoring_tools = df.iloc[row]['scoring_function']
-    ranking_method = df.iloc[row]['ranking_method']
-    
-    return ast.literal_eval(docking_tools), ast.literal_eval(scoring_tools), ranking_method
 
 
 def download_and_extract_zip(url, extract_to):

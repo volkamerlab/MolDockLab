@@ -1,12 +1,12 @@
 import pandas as pd
 import numpy as np
 
-from rdkit import Chem
 from pathlib import Path
 from rdkit.Chem import PandasTools
 from sklearn_extra.cluster import KMedoids
 
 from src.preprocessing import get_fp
+
 def diversity_selection(
         ranked_interx_df : pd.DataFrame, 
         sdf : Path, 

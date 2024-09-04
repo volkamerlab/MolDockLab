@@ -1,6 +1,13 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 
+'''''
+For more information on these methods, please refer to the following paper:
+
+Lacour A, Ibrahim H, Volkamer A, Hirsch AKH. DockM8: An All-in-One Open-Source 
+Platform for Consensus Virtual Screening in Drug Design. 
+ChemRxiv. 2024; doi:10.26434/chemrxiv-2024-17k46.
+'''''
 
 def method1_ECR_best(
         df: pd.DataFrame, 

@@ -1,12 +1,12 @@
-from src.consensus_rank import *
-from multiprocessing import cpu_count
-import concurrent.futures
-from pathlib import Path
 import os
 import pandas as pd
+import concurrent.futures
+
+from pathlib import Path
 from scipy.stats import spearmanr
+from src.consensus_rank import *
+from multiprocessing import cpu_count
 from src.utilities import split_list, workflow_combinations
-# Calculate Spearman correlation
 
 def runtime_cost_calculation(
                 docking_tools: list, 

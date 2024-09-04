@@ -1,22 +1,19 @@
-import glob
-import json
 import os
+import json
 import shutil
-from pathlib import Path
-
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
-from PIL import Image
+
+from pymol import cmd
+from rdkit import Chem
+from pathlib import Path
 from typing import Union
+from tqdm.auto import tqdm
+from rdkit.Chem import AllChem, PandasTools
+
 from software.plipify.plipify.core import Structure
 from software.plipify.plipify.fingerprints import InteractionFingerprint
 from software.plipify.plipify.visualization import fingerprint_barplot
-from pymol import cmd
-from rdkit import Chem
-from rdkit.Chem import AllChem, PandasTools
-from tqdm.auto import tqdm
-
 
 def plipify_fp_interaction(
         ligands_path:Path,

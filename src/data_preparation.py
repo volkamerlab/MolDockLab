@@ -1,11 +1,13 @@
-import multiprocessing
 import os
+import multiprocessing
+
+import pandas as pd
+
+from rdkit import Chem
+from pathlib import Path
+from rdkit.Chem import AllChem, PandasTools
 
 from src.utilities import run_command
-import pandas as pd
-from rdkit import Chem
-from rdkit.Chem import AllChem, PandasTools
-from pathlib import Path
 
 def _minimize_and_select_most_stable(row: pd.Series, numConfs: int = 10) -> pd.DataFrame:
     """

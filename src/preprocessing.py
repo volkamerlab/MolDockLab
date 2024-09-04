@@ -1,15 +1,16 @@
 import os
-
 import hdbscan
 import numpy as np
 import pandas as pd
 import sklearn.model_selection as skl_model_sel
-from rdkit import Chem
-from rdkit.Chem import AllChem, PandasTools
-from rdkit.Chem.Scaffolds import MurckoScaffold
-from sklearn.preprocessing import RobustScaler
 
 from pathlib import Path
+from rdkit import Chem
+from rdkit.Chem import PandasTools
+from rdkit.Chem.Scaffolds import MurckoScaffold
+from sklearn.preprocessing import RobustScaler
+from rdkit.Chem.rdFingerprintGenerator import GetMorganGenerator
+
 from src.utilities import handling_multicollinearity, run_command
 
 
@@ -87,7 +88,7 @@ def _get_scaffold(mol : Chem.Mol) ->Chem.rdchem.Mol:
     return MurckoScaffold.GetScaffoldForMol(mol)
 
 
-def _get_fp(scaffold : Chem.Mol) -> np.ndarray:
+def get_fp(scaffold : Chem.Mol) -> np.ndarray:
     """
     Get the Morgan fingerprint of a molecule
     Args:
@@ -95,10 +96,9 @@ def _get_fp(scaffold : Chem.Mol) -> np.ndarray:
     Return:
         numpy.ndarray : Morgan fingerprint of the molecule
     """
-
-    return np.array(
-        AllChem.GetMorganFingerprintAsBitVect(
-            scaffold, radius=2, nBits=2048))
+    morgan_fp_gen = GetMorganGenerator(radius=2, fpSize=2048)
+    fp = morgan_fp_gen.GetFingerprint(scaffold)
+    return fp
 
 
 def _get_cluster_labels(scaffold_fps : list, min_cluster_size : int=2) -> np.ndarray:

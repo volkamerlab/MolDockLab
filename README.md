@@ -24,11 +24,6 @@ MolDockLab was used in a real case study to find potential hits for an antibacte
 - **`setup_py310.sh`**: Installation script to set up the Python 3.10 environment and dependencies required to run the workflow.
 
 ---
-
-## Installation
-
-Thanks to the [Installation guide of DockM8](https://github.com/DrugBud-Suite/DockM8/blob/main/DockM8_Installation_Guide.pdf), the environment can be installed using the provided `setup_py310.sh` installation script, after adding the needed packages and removing the unused ones.
-
 ## Installation
 
 Thanks to the [Installation guide of DockM8](https://github.com/DrugBud-Suite/DockM8/blob/main/DockM8_Installation_Guide.pdf), the environment was adapted to meet the needs of **MolDockLab**. It can be installed using the provided `setup_py310.sh` after opening the terminal in the `MolDockLab` directory, through installation script:
@@ -54,73 +49,92 @@ For step-by-step tutorial, the steps in `test_run.ipynb` can be followed.
 
 All options:
 ```
-  -h, --help                    Show this help message and exit.
+-h, --help                Show this help message and exit.
+
 
 Required args:
-  --protein_path            Path to the protein file.
-  --ref_ligand_path         Path to the reference ligand file.
-  --known_ligands_path      Path to the experimentally validated ligands library.
-  --sbvs_ligands_path       Path to the le ligand library for SBVS.
-  --true_value_col          Column name of the true activity values in the 
-                            experimentally validated ligands library.
+
+--protein_path            Path to the protein file.
+--ref_ligand_path         Path to the reference ligand file.
+--known_ligands_path      Path to the experimentally validated ligands library.
+--sbvs_ligands_path       Path to the le ligand library for SBVS.
+--true_value_col          Column name of the true activity values in the 
+                          experimentally validated ligands library.
+
 
 Optional args:
-  --activity_col            Column name for the activity class (default: "activity_class").
-  --id_col                  Column name for the ligand ID (default: "ID").
-  --protein_name            Protein name for documentation (optional).
-  --n_cpus (=1)             Number of CPUs to use for rescoring and ranking.
-  --out_dir                 Directory to save results (default: "output").
+
+--activity_col            Column name for the activity class (default: "activity_class").
+--id_col                  Column name for the ligand ID (default: "ID").
+--protein_name            Protein name for documentation (optional).
+--n_cpus (=1)             Number of CPUs to use for rescoring and ranking.
+--out_dir                 Directory to save results (default: "output").
+
 
 Docking Options:
-  --docking_programs  [DOCKING_PROGRAMS ...]
-                            Docking programs to use (allowed_progs: gnina, smina, 
-                            diffdock, plants, flexx).
-                            Example: --docking_programs gnina smina diffdock
-  --n_poses (=10)           Number of poses to generate per docking tool.
-  --exhaustiveness (=8)     Exhaustiveness for SMINA/GNINA docking tools.
-  --local_diffdock (False)  Use local DiffDock for predictions (default: False), only recommended 
-                            for wrong binding pocket prediction of normal DiffDock.
+
+--docking_programs  [DOCKING_PROGRAMS ...]
+                          Docking programs to use (allowed_progs: gnina, smina, 
+                          diffdock, plants, flexx).
+                          Example: --docking_programs gnina smina diffdock
+--n_poses (=10)           Number of poses to generate per docking tool.
+--exhaustiveness (=8)     Exhaustiveness for SMINA/GNINA docking tools.
+--local_diffdock (False)  Use local DiffDock for predictions (default: False), only 
+                          recommended for wrong binding pocket prediction of normal 
+                          DiffDock.
+
 
 Rescoring Options:
-  --rescoring  [RESCORING ...] 
-                            Rescoring functions to use.
-                            Allowed_SFs: cnnaffinity, cnnscore, smina_affinity, scorch, ad4, 
-                            linf9, rtmscore, vinardo, chemplp, rfscore_v1, rfscore_v2, rfscore_v3, 
-                            vina_hydrophobic, vina_intra_hydrophobic and hyde.
-                            Example: --rescoring cnnscore vinardo
-  --corr_threshold (=0.9)   Max. allowed Spearman correlation between two scoring functions.
+
+--rescoring  [RESCORING ...] 
+                          Rescoring functions to use.
+                          Allowed_SFs: cnnaffinity, cnnscore, smina_affinity, scorch, ad4, 
+                          linf9, rtmscore, vinardo, chemplp, rfscore_v1, rfscore_v2,
+                          rfscore_v3, vina_hydrophobic, vina_intra_hydrophobic and hyde.
+                          Example: --rescoring cnnscore vinardo
+--corr_threshold (=0.9)   Max. allowed Spearman correlation between two scoring functions.
+
 
 Ranking Methods:
-  --ranking_method  [RANKING_METHOD ...]
-                            Consensus ranking methods to use. 
-                            Allowed consensus methods: best_ECR, ECR_average, average_ECR, 
-                            rank_by_rank, rank_by_vote, rank_by_number, best_Zscore, average_Zscore, 
-                            weighted_ECR
-                            Example: --ranking_method best_ECR weighted_ECR
-  --runtime_reg (=0.1)      Regularization parameter for runtime cost in pose score 
-                            optimization.
+
+--ranking_method  [RANKING_METHOD ...]
+                          Consensus ranking methods to use. 
+                          Allowed consensus methods: best_ECR, ECR_average, average_ECR, 
+                          rank_by_rank, rank_by_vote, rank_by_number, best_Zscore, 
+                          average_Zscore, weighted_ECR
+                          Example: --ranking_method best_ECR weighted_ECR
+--runtime_reg (=0.1)      Regularization parameter for runtime cost in pose score 
+                          optimization.
+
 
 Pipeline Selection:
-  --corr_range (=0.1)       Allowed range of Spearman correlation for selecting a pipeline 
-                            with the lowest runtime cost.
-  --ef_range (=0.5)         Enrichment factor range for selecting the best pipeline.
+
+--corr_range (=0.1)       Allowed range of Spearman correlation for selecting a pipeline 
+                        with the lowest runtime cost.
+--ef_range (=0.5)         Enrichment factor range for selecting the best pipeline.
+
 
 Interaction Analysis:
-  --interacting_chains  [INTERACTING_CHAINS ...]
-                            Chains to include in protein-ligand interactions (default: X).
-  --key_residues  [KEY_RESIDUES ...]
-                            Key residues for interaction filtration can be given manually 
-                            (e.g., "123A 124B"). 
-                            If None, the top four frequent interacting residues from 
-                            active compounds will be used (default: None).
+
+--interacting_chains  [INTERACTING_CHAINS ...]
+                          Chains to include in protein-ligand interactions (default: X).
+--key_residues  [KEY_RESIDUES ...]
+                          Key residues for interaction filtration can be given manually 
+                          (e.g., "123A 124B"). 
+                          If None, the top four frequent interacting residues from 
+                          active compounds will be used (default: None).
+
 
 Diversity Selection:
-  --n_clusters (=5)         Number of clusters/compounds to select in diversity selection.
+
+--n_clusters (=5)         Number of clusters/compounds to select in diversity selection.
+
 
 Quality Checking:
-  --pose_quality_checker    Enable pose quality checker for used docking tools
-                            using PoseBusters (default: False).
-  --versatility_analysis    Enable versatility analysis to evaluate MolDockLab generalizability.
+
+--pose_quality_checker    Enable pose quality checker for used docking tools
+                          using PoseBusters (default: False).
+--versatility_analysis    Enable versatility analysis to evaluate MolDockLab versatility.
 ```
 ---
 ## License

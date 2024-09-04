@@ -16,12 +16,12 @@ def scores_preprocessing(df: pd.DataFrame) -> tuple:
     Args:
         df: pd.DataFrame, the scores
     Returns:
-        X: torch.Tensor of shape (n_ligands, n_docking_tools, n_scoring_tools, n_poses)
-        y: torch.Tensor of shape (n_ligands)
-        docking_cost: np.array of shape (n_docking_tools)
-        scoring_cost: np.array of shape (n_scoring_tools)
-        docking_tools: list of str, the docking tools
-        scoring_tools: list of str, the scoring tools
+        X(torch.Tensor): torch.Tensor of shape (n_ligands, n_docking_tools, n_scoring_tools, n_poses)
+        y(torch.Tensor): torch.Tensor of shape (n_ligands)
+        docking_cost(np.array): np.array of shape (n_docking_tools)
+        scoring_cost(np.array): np.array of shape (n_scoring_tools)
+        docking_tools(list): list of str, the docking tools
+        scoring_tools(list): list of str, the scoring tools
     """
 
     cost_dict = {
@@ -97,28 +97,29 @@ def prediction(c_r: torch.Tensor, c_d:torch.Tensor, X: torch.Tensor) -> torch.Te
     """
     Predict the binding affinity
     Args:
-        c_r: torch.Tensor of shape (1, 1, 15), the weights for the rescoring function
-        c_d: torch.Tensor of shape (1, 5, 1), the weights for the docking function
-        X: torch.Tensor of shape (n_ligands, n_docking_tools, n_scoring_tools, n_poses)
+        c_r (torch.Tensor): torch.Tensor of shape (1, 1, 15), the weights for the rescoring function
+        c_d (torch.Tensor): torch.Tensor of shape (1, 5, 1), the weights for the docking function
+        X (torch.Tensor): torch.Tensor of shape (n_ligands, n_docking_tools, n_scoring_tools, n_poses)
     Returns:
-        affinity: torch.Tensor of shape (n_ligands), the predicted binding affinity
+        affinity (torch.Tensor): torch.Tensor of shape (n_ligands), the predicted binding affinity
     """
     return (X * c_r * c_d).nan_to_num().sum(1).sum(1)
 
 
-def prepare_parameters(x: np.array) -> tuple:
+def prepare_parameters(x: np.array, num_docking_tools: int) -> tuple:
     """
     Prepare the parameters for the optimization
-    Args:
+    Args(np.array):
         x: np.array of shape (20), the weights for the scoring function
+        num_docking_tools: int, the number of docking tools
     Returns:
-        c_r: torch.Tensor of shape (1, 1, 15), the weights for the rescoring function
-        c_d: torch.Tensor of shape (1, 5, 1), the weights for the docking function
+        c_r(torch.Tensor): torch.Tensor of shape (1, 1, 15), the weights for the rescoring function
+        c_d(torch.Tensor): torch.Tensor of shape (1, 5, 1), the weights for the docking function
     """
     c = torch.tensor(x)
 
-    c_r = c[:-5].reshape(1, 1, -1)
-    c_d = c[-5:].reshape(1, -1, 1)
+    c_r = c[:-num_docking_tools].reshape(1, 1, -1)
+    c_d = c[-num_docking_tools:].reshape(1, -1, 1)
 
     return c_r, c_d
 
@@ -135,18 +136,18 @@ def loss(
     """
     Loss function for the optimization
     Args:
-        x_rand: np.array of shape (20), the weights for the scoring function
-        X: torch.Tensor of shape (n_ligands, n_docking_tools, n_scoring_tools, n_poses)
-        y: torch.Tensor of shape (n_ligands)
-        docking_cost: np.array of shape (n_docking_tools)
-        scoring_cost: np.array of shape (n_scoring_tools)
-        reg: float, the regularization parameter
-        verbose: bool, whether to print the loss
+        x_rand (np.array): np.array of shape (20), the weights for the scoring function
+        X (torch.Tensor): torch.Tensor of shape (n_ligands, n_docking_tools, n_scoring_tools, n_poses)
+        y (torch.Tensor): torch.Tensor of shape (n_ligands)
+        docking_cost (np.array): np.array of shape (n_docking_tools)
+        scoring_cost (np.array): np.array of shape (n_scoring_tools)
+        reg (float): the regularization parameter
+        verbose (bool): whether to print the loss
     Returns:
         loss: float, the loss
     """
     c = torch.tensor(x_rand)
-    c_r, c_d = prepare_parameters(c)
+    c_r, c_d = prepare_parameters(c, X.shape[1])
     model_loss = ((prediction(c_r, c_d, X) - y) ** 2).mean().item()
     regularization = ((c_d * docking_cost).abs().sum() +
                       (c_r * scoring_cost).abs().sum())
@@ -167,15 +168,15 @@ def optimize_score(
     """
     Optimize the weights for the scoring function
     Args:
-        X: torch.Tensor of shape (n_ligands, n_docking_tools, n_scoring_tools, n_poses)
-        y: torch.Tensor of shape (n_ligands)
-        docking_cost: np.array of shape (n_docking_tools)
-        scoring_cost: np.array of shape (n_scoring_tools)
-        reg: float, the regularization parameter
-        iter: int, number of iterations for the optimization
+        X (torch.Tensor): torch.Tensor of shape (n_ligands, n_docking_tools, n_scoring_tools, n_poses)
+        y (torch.Tensor): torch.Tensor of shape (n_ligands)
+        docking_cost (np.array): np.array of shape (n_docking_tools)
+        scoring_cost (np.array): np.array of shape (n_scoring_tools)
+        reg (float): the regularization parameter
+        iter (int): number of iterations for the optimization
     Returns:
-        losses: list of float, the loss for each iteration
-        weights: list of np.array, the weights for each iteration
+        losses (list): list of float, the loss for each iteration
+        weights (dict): list of np.array, the weights for each iteration
     """
 
     losses = []
@@ -194,7 +195,8 @@ def optimize_score(
                 y,
                 docking_cost,
                 scoring_cost,
-                reg),
+                reg
+                ),
             method='Nelder-Mead')
         losses.append(res.fun)
         weights.append(res.x)
@@ -212,15 +214,15 @@ def score_pose_optimization(
     """
     Optimize the weights for the scoring functions with list of different regularization parameters
     Args:
-        X: torch.Tensor of shape (n_ligands, n_docking_tools, n_scoring_tools, n_poses)
-        y: torch.Tensor of shape (n_ligands)
-        docking_cost: np.array of shape (n_docking_tools)
-        scoring_cost: np.array of shape (n_scoring_tools)
-        weights_path: Path to save the optimized weights
-        alphas: list of float, the regularization parameters
-        iter: int, number of iterations for the optimization
+        X(torch.Tensor): torch.Tensor of shape (n_ligands, n_docking_tools, n_scoring_tools, n_poses)
+        y(torch.Tensor): torch.Tensor of shape (n_ligands)
+        docking_cost(np.array): np.array of shape (n_docking_tools)
+        scoring_cost(np.array): np.array of shape (n_scoring_tools)
+        weights_path(Path): Path to save the optimized weights
+        alphas(list): list of float, the regularization parameters
+        iter(int): int, number of iterations for the optimization
     Returns:
-        best_weights: dict of shape (n_alphas), the best weights for each alpha
+        best_weights(dict): dict of shape (n_alphas), the best weights for each alpha
     """
 
     if weights_path.exists():
@@ -230,14 +232,12 @@ def score_pose_optimization(
         return best_weights
 
     best_weights = {}
+
     for alpha in alphas:
         print(f'Optimization with Regularization: {alpha}')
-        losses, weights = optimize_score(
-            X, y, docking_cost, scoring_cost, reg=alpha, iter=iter)
+        losses, weights = optimize_score(X, y, docking_cost, scoring_cost, reg=alpha, iter=iter)
         min_loss_idx = np.argmin(losses)
         best_weights[alpha] = weights[min_loss_idx]
-        # print(alpha)
-        # print(weights[min_loss_idx])
     np.save(str(weights_path), best_weights)
     return best_weights
 
@@ -251,11 +251,11 @@ def mapping_normalized_weights(
     Map the normalized weights of the optimization function to the scoring functions and docking tools
 
     Args:
-        best_weights: the best weights for a selected alpha
-        scoring_tools: list of str, the scoring tools
-        docking_tools: list of str, the docking tools
+        best_weights(np.array): the best weights for a selected alpha
+        scoring_tools(list): list of str, the scoring tools
+        docking_tools(list): list of str, the docking tools
     Returns:
-        normalized_weights: dict of shape (n_scoring_tools + n_docking_tools), the normalized weights for each tool
+        normalized_weights(dict): dict of shape (n_scoring_tools + n_docking_tools), the normalized weights for each tool
     """
     # Combine scoring and docking tools into one list
     all_tools = scoring_tools + docking_tools

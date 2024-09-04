@@ -240,6 +240,8 @@ def method9_weighted_ECR_best(
     Returns:
         DataFrame: The dataframe containing the ID and the best ECR score for each pose
     """
+    if 'docking_tool' not in df.columns:
+        df['docking_tool'] = df[id_column].str.split('_').str[1]
     docking_tools_sigma = np.mean([mapped_weights[d] for d in df.docking_tool.unique()])
     try:
         for col in selected_scores:

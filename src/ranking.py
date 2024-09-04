@@ -226,6 +226,7 @@ def poses_ranking(
                 all the results to a big csv file
         """
         ncpus = cpu_count()
+        df_rescored = df_rescored.copy()
         df_rescored[['ID', 'docking_tool', 'pose']] = df_rescored['ID'].str.split('_', expand=True)
         df_rescored = df_rescored[df_rescored['docking_tool'].notna()]
         docking_programs = list(df_rescored['docking_tool'].unique())

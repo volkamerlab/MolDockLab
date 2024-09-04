@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from PIL import Image
+from typing import Union
 from software.plipify.plipify.core import Structure
 from software.plipify.plipify.fingerprints import InteractionFingerprint
 from software.plipify.plipify.visualization import fingerprint_barplot
@@ -46,8 +47,8 @@ def plipify_fp_interaction(
             ligand_protein_complex(ligand_pdb, protein_path, protein_name, chains)[0]
             for ligand_pdb in ligand_pdb_paths
         ]
-        fp_focused = interaction_fp_generator(
-            ligand_protein_cpx_paths, output_file)
+        fp_focused = interaction_fp_generator(ligand_protein_cpx_paths, output_file)
+        shutil.rmtree((ligand_protein_cpx_paths[0].parent).parent)
         return fp_focused
     else:
         raise ValueError("No sdf files found")
@@ -58,9 +59,7 @@ def plipify_fp_interaction(
             ligand_pdb, protein_path, protein_name, chains)
         for cpx in ligand_protein_cpx_chains:
             try:
-                prepared_cpx = [
-                    Structure.from_pdbfile(
-                        str(cpx), ligand_name="HIT")]
+                prepared_cpx = [Structure.from_pdbfile(str(cpx), ligand_name="HIT")]
                 fp = InteractionFingerprint().calculate_fingerprint(
                     prepared_cpx,
                     labeled=True,
@@ -84,7 +83,8 @@ def plipify_fp_interaction(
             os.remove(f'/tmp/{cpx.stem}_protonated.pdb')
             # os.remove(str(cpx))
         mol_interx_fp[ligand_pdb.stem] = interaction_fp
-    # shutil.rmtree(ligands_path[0].parent)
+    # print(type(ligands_path), ligands_path)
+    os.remove(str(ligands_path))
     return mol_interx_fp
 
 
@@ -98,7 +98,7 @@ def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFram
     Returns:
         fp_focused: DataFrame of the interactions
     """
-    
+
     structures = [Structure.from_pdbfile(str(pdb),ligand_name="HIT") for pdb in tqdm(complex_path)]
 
     fp = InteractionFingerprint().calculate_fingerprint(
@@ -258,6 +258,7 @@ def read_interactions_json(json_file:Path, output_file:Path) -> pd.DataFrame:
     interactions_df = flattened_df.pivot_table(
         index='Poses', columns='Residues', aggfunc=len, fill_value=0)
     interactions_df.to_csv(output_file)
+    os.remove(json_file)
     return interactions_df
 
 
@@ -282,7 +283,6 @@ def indiviudal_interaction_fp_generator(
     if output_dir.is_dir():
         print('Interactions for all poses are already executed')
         return output_dir
-    print(f"Generating interactions for {len(sdfs_path)} poses\n\n")
 
     allposes_interaction_fp = {}
     for i, sdf in enumerate(sdfs_path):
@@ -293,6 +293,7 @@ def indiviudal_interaction_fp_generator(
             _write_json(allposes_interaction_fp, str(output_dir))
 
     _write_json(allposes_interaction_fp, str(output_dir))
+    shutil.rmtree(sdfs_path[0].parent)
     return allposes_interaction_fp
 
 
@@ -333,25 +334,10 @@ def interactions_aggregation(
     aggregated_df = interactions_df.groupby('id').sum()
     return aggregated_df[important_interactions].reset_index()
 
-
-# def interx_plot(residue_df, imp_interactions):
-#     if not imp_interactions:
-#         imp_interactions = residue_df.columns
-#     sns.set_theme(style="whitegrid")
-#     plt.figure(figsize=(20, 10))
-#     ax = sns.barplot(x=imp_interactions,
-#                      y=residue_df.loc['frequency', imp_interactions])
-#     ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
-#     ax.set_title('Frequency of each residue in HIPS dataset')
-#     ax.set_ylabel('Frequency')
-#     ax.set_xlabel('Residue')
-#     plt.tight_layout()
-#     plt.show()
-
 def actives_extraction(
-        test_set_docked_path,
-        merged_rescoring_path,
-        docking_tool):
+        test_set_docked_path : Path,
+        merged_rescoring_path : Path,
+        docking_tool : Union[str, list]):
     """
     This function filters the actives from the docking poses based on a threshold 
     of the true value and the selected docking tool

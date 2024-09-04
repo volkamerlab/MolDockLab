@@ -2,14 +2,14 @@
 
 MolDockLab is a **data-driven workflow** designed to identify the best balanced consensus **Structure-Based Virtual Screening (SBVS)** workflow for a target of interest. The workflow integrates various **docking tools**, **scoring functions**, and **consensus methods** to achieve optimal screening performance.
 
-As a validation case study, the workflow was applied to the **EGFR tet** (Epidermal Growth Factor Receptor) to compare different SBVS pipelines and assess their relative performance. Results can be found in `egfr_data/`.
-
-MolDockLab was used in a real case study to find potential hits for an antibacterial tet called **Energy Coupling Factor Transporters (ECF-T)**, in a collaboration work with Helmholtz-Institut für Pharmaceutical Research Saarland (HIPS). Through screening the in-house library of around 6.6K compounds, it resulted in the identification of **two new antibacterial classes** for ECF-T target, which were validated experimentally.
-
+As a validation case study, the workflow was applied to the **EGFR target** (Epidermal Growth Factor Receptor) to compare different SBVS pipelines and assess their relative performance. Results can be found in `egfr_data/`.
 
 <p align="center">
   <img src="moldocklab_fig.png" alt="MolDockLab Workflow Diagram">
 </p>
+
+MolDockLab was used in a real case study to find potential hits for an antibacterial tet called **Energy Coupling Factor Transporters (ECF-T)**, in a collaboration work with Helmholtz-Institut für Pharmaceutical Research Saarland (HIPS). Through screening the in-house library of around 6.6K compounds, it resulted in the identification of **two new antibacterial classes** for ECF-T target, which were validated experimentally.
+
 
 ---
 

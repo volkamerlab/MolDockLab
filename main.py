@@ -1,18 +1,21 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-# import seaborn as sns
-import ast
-import numpy as np
-import matplotlib.pyplot as plt
-import logging
-from pathlib import Path
 import os
+import ast
+import logging
+
+import numpy as np
+import pandas as pd
 import seaborn as sns
-from scipy.stats import spearmanr
-from tqdm.autonotebook import tqdm
-from src.data_preparation import run_gypsumdl
-from IPython.display import display, Image
+import matplotlib.pyplot as plt
+
+from pathlib import Path
+from rdkit.Chem import Draw
 from sklearn.model_selection import train_test_split
+from argparse import ArgumentParser, Namespace, FileType
+
+from src.ranking import *
+from src.consensus_rank import *
+from src.data_preparation import run_gypsumdl
+from src.diversity_selection import diversity_selection
 from src.docking import docking, poses_checker
 from src.rescoring import rescoring_function
 from src.preprocessing import merge_activity_values, hdbscan_scaffold_split, cv_split, norm_scores
@@ -24,14 +27,7 @@ from src.interaction_analysis import (
     indiviudal_interaction_fp_generator, 
     read_interactions_json, 
     interactions_aggregation
-)
-from src.consensus_rank import *
-
-from argparse import ArgumentParser, Namespace, FileType
-from src.ranking import *
-import matplotlib.pyplot as plt
-
-from pathlib import Path
+    )
 
 def get_parser():
     parser = ArgumentParser()
@@ -50,7 +46,7 @@ def get_parser():
     parser.add_argument('--true_value_col', type=str, default=None, help='The column name of the true value in the ligands library')
     parser.add_argument('--protein_name', type=str, default=None, help='The name of the protein')
     parser.add_argument('--interacting_chains', nargs='+', default=['X'], help='The chains that included in the protein-ligand interactions')
-
+    parser.add_argument('--n_clusters', type=int, default=5, help='The number of clusters/compounds to select in the diversity selection step')
     parser.add_argument('--key_residues', nargs='+', default=None, help='The key residues for protein-ligand interactions to consider in the interaction filtration. If None, The top four frequent interacting residues found in active compounds are considered. added by resdiue number + chain, e.g. 123A 124B , etc')
     parser.add_argument('--docking_programs', nargs='+', default=['gnina', 'smina', 'diffdock', 'plants', 'flexx'], type=str, help='The docking tools to use. The docking tools are gnina, smina, diffdock, plants, and flexx')
     parser.add_argument('--n_poses', default=10, type=int, help='The number of poses to generate per docking tool')
@@ -458,6 +454,31 @@ def main(args):
 
     # @TODO : Add the diversity selection step and visualize the selected compounds
 
+    logger.info("🔷 Select the most diverse number of compounds ...")
+    try:
+        if merged_df is None:
+            merged_df = pd.read_csv(larger_data_output / 'ranked_selected_interx_ligands.csv')
+        clustered_df = diversity_selection(ranked_interx_df=merged_df,
+                                           sdf= HERE / args.sbvs_ligands_path,
+                                           id_col=args.id_col,
+                                           n_clusters=args.n_clusters
+                                           )
+        selected_diverse = clustered_df[clustered_df['diversity_selection'] == 1]
+        img = Draw.MolsToGridImage(
+            selected_diverse['ROMol'], 
+            molsPerRow=5, 
+            subImgSize=(200, 200), 
+            legends=[f"{row['ID']}" for idx, row in selected_diverse.iterrows()]
+        )
+
+        # Save the image to a file
+        img.save(OUTPUT / "final_compound_selection.png")
+        selected_diverse.to_csv(larger_data_output / 'selected_diverse_ligands.csv', index=False)
+        logger.info(f"✅ Selected diverse ligands are saved at {larger_data_output / 'Final_compounds_selection.csv'}")
+    except Exception as e:
+        logger.error(f"❗An error occured while selecting the most diverse number of compounds: {e}")
+        return
+    logger.info("\n\n🏁 MolDockLab workflow is completed successfully 🏁\n\n")
     # @TODO : Add versatility analysis step
     # if args.versatility_analysis:
     #     logger.info("Performing the versatility analysis ...")

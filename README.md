@@ -1,10 +1,10 @@
 # MolDockLab Workflow
 
-MolDockLab is a **data-driven workflow** designed to identify the best balanced consensus **Structure-Based Virtual Screening (SBVS)** workflow for a target of interest. The workflow integrates various **docking tools**, **scoring functions**, and **consensus methods** to achieve optimal screening performance.
+MolDockLab is a **data-driven workflow** designed to identify the best balanced consensus **Structure-Based Virtual Screening (SBVS)** workflow for a tet of interest. The workflow integrates various **docking tools**, **scoring functions**, and **consensus methods** to achieve optimal screening performance.
 
-As a validation case study, the workflow was applied to the **EGFR target** (Epidermal Growth Factor Receptor) to compare different SBVS pipelines and assess their relative performance. Results can be found in `egfr_data/`.
+As a validation case study, the workflow was applied to the **EGFR tet** (Epidermal Growth Factor Receptor) to compare different SBVS pipelines and assess their relative performance. Results can be found in `egfr_data/`.
 
-MolDockLab was used in a real case study to find potential hits for an antibacterial target called **Energy Coupling Factor (ECF) Transporters**, in a collaboration work with Helmholtz-Institut für Pharmazeutische Forschung Saarland (HIPS). By screening the in-house library of around 6.6K compounds, it resulted in the identification of **two new antibacterial classes** for the target, which were validated experimentally.
+MolDockLab was used in a real case study to find potential hits for an antibacterial tet called **Energy Coupling Factor (ECF) Transporters**, in a collaboration work with Helmholtz-Institut für Pharmazeutische Forschung Saarland (HIPS). By screening the in-house library of around 6.6K compounds, it resulted in the identification of **two new antibacterial classes** for the tet, which were validated experimentally.
 
 
 <p align="center">
@@ -19,7 +19,7 @@ MolDockLab was used in a real case study to find potential hits for an antibacte
 - **`src/`**: The source code directory containing the core implementation of the MolDockLab workflow.
 - **`test_data/`**: A small subset of test data (3 compounds for pipeline selection and 10 compounds for SBVS) used to test the workflow on a smaller scale.
 - **`test_output/`**: Output generated from running the workflow on the test data.
-- **`EGFR_pipeline.ipynb`**: A Jupyter notebook that reproduces the EGFR target results. Use this to follow along with the pipeline's analysis for EGFR.
+- **`EGFR_pipeline.ipynb`**: A Jupyter notebook that reproduces the EGFR tet results. Use this to follow along with the pipeline's analysis for EGFR.
 - **`moldocklab.py`**: The main script that orchestrates the execution of the MolDockLab workflow.
 - **`setup_py310.sh`**: Installation script to set up the Python 3.10 environment and dependencies required to run the workflow.
 
@@ -53,58 +53,65 @@ For step-by-step tutorial, the steps in `test_run.ipynb` can be followed.
 ### Command-Line Options
 
 
-All arguments:
+All uments:
 ```
   -h, --help                    Show this help message and exit.
 
-**Required Inputs:**
-  --protein_path arg            Path to the protein file (required).
-  --ref_ligand_path arg         Path to the reference ligand file (required).
-  --known_ligands_path arg
-                                         Path to the experimentally validated ligands library (required).
-  --sbvs_ligands_path arg       Path to the large ligand library for SBVS (required).
-  --true_value_col arg          Column name of the true activity values in the experimentally validated ligands library (required).
+Required args:
+  --protein_path            Path to the protein file.
+  --ref_ligand_path         Path to the reference ligand file.
+  --known_ligands_path      Path to the experimentally validated ligands library.
+  --sbvs_ligands_path       Path to the le ligand library for SBVS.
+  --true_value_col          Column name of the true activity values in the 
+                            experimentally validated ligands library.
 
-**Optional Arguments:**
-  --activity_col arg           Column name for the activity class (default: "activity_class").
-  --id_col arg                 Column name for the ligand ID (default: "ID").
-  --protein_name arg           Protein name for documentation (optional).
-  --n_cpus arg                 Number of CPUs to use for rescoring and ranking (default: 1).
-  --out_dir arg                Directory to save results (default: "output").
+Optional args:
+  --activity_col            Column name for the activity class (default: "activity_class").
+  --id_col                  Column name for the ligand ID (default: "ID").
+  --protein_name            Protein name for documentation (optional).
+  --n_cpus (=1)             Number of CPUs to use for rescoring and ranking.
+  --out_dir                 Directory to save results (default: "output").
 
-**Docking Options:**
-  --docking_programs args [DOCKING_PROGRAMS ...]
-                                         Docking programs to use (default: gnina, smina, diffdock, plants, flexx).
-                                         Example: --docking_programs gnina smina diffdock
-  --n_poses arg                     Number of poses to generate per docking tool (default: 10).
-  --exhaustiveness arg       Exhaustiveness for SMINA/GNINA docking tools (default: 8).
-  --local_diffdock                      Use local DiffDock for predictions (default: False).
+Docking Options:
+  --docking_programs  [DOCKING_PROGRAMS ...]
+                            Docking programs to use (allowed_progs: gnina, smina, 
+                            diffdock, plants, flexx).
+                            Example: --docking_programs gnina smina diffdock
+  --n_poses (=10)           Number of poses to generate per docking tool (default: 10).
+  --exhaustiveness (=8)     Exhaustiveness for SMINA/GNINA docking tools (default: 8).
+  --local_diffdock (False)  Use local DiffDock for predictions (default: False), only       
+                            recommended for wrong binding pocket prediction of normal DiffDock.
 
-**Rescoring Options:**
-  --rescoring args [RESCORING ...] Rescoring functions to use (default: cnnscore, ad4, linf9, rtmscore, vinardo, chemplp, rfscore_v1, rfscore_v3, vina_hydrophobic, vina_intra_hydrophobic).
-                                         Example: --rescoring cnnscore vinardo
-  --corr_threshold arg       Spearman correlation threshold to filter scores (default: 0.9).
+Rescoring Options:
+  --rescoring  [RESCORING ...] 
+                            Rescoring functions to use (allowed_progs: cnnaffinity, cnnscore, smina_affinity, scorch, ad4, linf9, rtmscore, vinardo, chemplp, rfscore_v1, rfscore_v2, rfscore_v3, vina_hydrophobic, vina_intra_hydrophobic, hyde).
+                            Example: --rescoring cnnscore vinardo
+  --corr_threshold (=0.9)   Max. allowed Spearman correlation between two scoring functions.
 
-**Ranking Methods:**
-  --ranking_method args [RANKING_METHOD ...]
-                                         Ranking methods to use (default: best_ECR, rank_by_rank, best_Zscore, weighted_ECR).
-                                         Example: --ranking_method best_ECR weighted_ECR
-  --runtime_reg arg             Regularization parameter for runtime cost in score optimization (default: 0.1).
+Ranking Methods:
+  --ranking_method  [RANKING_METHOD ...]
+                            Ranking methods to use (allowed_methods: best_ECR, ECR_average, average_ECR, rank_by_rank, rank_by_vote, rank_by_number, best_Zscore, average_Zscore, weighted_ECR)
+                            Example: --ranking_method best_ECR weighted_ECR
+  --runtime_reg (=0.1)      Regularization parameter for runtime cost in pose score 
+                            optimization (default: 0.1).
 
-**Pipeline Selection:**
-  --corr_range arg               Allowed range of Spearman correlation for selecting a pipeline with the lowest runtime cost (default: 0.1).
-  --ef_range arg                   Enrichment factor range for selecting the best pipeline (default: 0.5).
+Pipeline Selection:
+  --corr_range (=0.1)       Allowed range of Spearman correlation for selecting a pipeline 
+                            with the lowest runtime cost.
+  --ef_range (=0.5)         Enrichment factor range for selecting the best pipeline.
 
-**Interaction Analysis:**
-  --interacting_chains args [INTERACTING_CHAINS ...]
-                                         Chains to include in protein-ligand interactions (default: X).
-  --key_residues args [KEY_RESIDUES ...]
-                                         Key residues for interaction analysis (e.g., "123A 124B"). If None, the top four frequent interacting residues from active compounds will be used (default: None).
+Interaction Analysis:
+  --interacting_chains  [INTERACTING_CHAINS ...]
+                            Chains to include in protein-ligand interactions (default: X).
+  --key_residues  [KEY_RESIDUES ...]
+                            Key residues for interaction filtration can be given manually (e.g., "123A 124B"). 
+                            If None, the top four frequent interacting residues from active compounds will be used (default: None).
 
-**Diversity Selection:**
-  --n_clusters arg               Number of clusters/compounds to select in diversity selection (default: 5).
+Diversity Selection:
+  --n_clusters (=5)         Number of clusters/compounds to select in diversity selection.
 
-**Quality Checking:**
-  --pose_quality_checker                Enable pose quality checker using PoseBusters (default: False).
-  --versatility_analysis                Enable versatility analysis to evaluate MolDockLab workflow performance (default: False).
+Quality Checking:
+  --pose_quality_checker    Enable pose quality checker for used docking tools
+                            using PoseBusters (default: False).
+  --versatility_analysis    Enable versatility analysis to evaluate MolDockLab workflow performance.
 ```

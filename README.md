@@ -1,4 +1,4 @@
-# MolDockLab Workflow
+# MolDockLab
 
 MolDockLab is a **data-driven workflow** designed to identify the best balanced consensus **Structure-Based Virtual Screening (SBVS)** workflow for a tet of interest. The workflow integrates various **docking tools**, **scoring functions**, and **consensus methods** to achieve optimal screening performance.
 
@@ -52,8 +52,7 @@ For step-by-step tutorial, the steps in `test_run.ipynb` can be followed.
 
 ### Command-Line Options
 
-
-All uments:
+All options:
 ```
   -h, --help                    Show this help message and exit.
 
@@ -77,23 +76,29 @@ Docking Options:
                             Docking programs to use (allowed_progs: gnina, smina, 
                             diffdock, plants, flexx).
                             Example: --docking_programs gnina smina diffdock
-  --n_poses (=10)           Number of poses to generate per docking tool (default: 10).
-  --exhaustiveness (=8)     Exhaustiveness for SMINA/GNINA docking tools (default: 8).
-  --local_diffdock (False)  Use local DiffDock for predictions (default: False), only       
-                            recommended for wrong binding pocket prediction of normal DiffDock.
+  --n_poses (=10)           Number of poses to generate per docking tool.
+  --exhaustiveness (=8)     Exhaustiveness for SMINA/GNINA docking tools.
+  --local_diffdock (False)  Use local DiffDock for predictions (default: False), only recommended 
+                            for wrong binding pocket prediction of normal DiffDock.
 
 Rescoring Options:
   --rescoring  [RESCORING ...] 
-                            Rescoring functions to use (allowed_progs: cnnaffinity, cnnscore, smina_affinity, scorch, ad4, linf9, rtmscore, vinardo, chemplp, rfscore_v1, rfscore_v2, rfscore_v3, vina_hydrophobic, vina_intra_hydrophobic, hyde).
+                            Rescoring functions to use.
+                            Allowed_SFs: cnnaffinity, cnnscore, smina_affinity, scorch, ad4, 
+                            linf9, rtmscore, vinardo, chemplp, rfscore_v1, rfscore_v2, rfscore_v3, 
+                            vina_hydrophobic, vina_intra_hydrophobic and hyde.
                             Example: --rescoring cnnscore vinardo
   --corr_threshold (=0.9)   Max. allowed Spearman correlation between two scoring functions.
 
 Ranking Methods:
   --ranking_method  [RANKING_METHOD ...]
-                            Ranking methods to use (allowed_methods: best_ECR, ECR_average, average_ECR, rank_by_rank, rank_by_vote, rank_by_number, best_Zscore, average_Zscore, weighted_ECR)
+                            Consensus ranking methods to use. 
+                            Allowed consensus methods: best_ECR, ECR_average, average_ECR, 
+                            rank_by_rank, rank_by_vote, rank_by_number, best_Zscore, average_Zscore, 
+                            weighted_ECR
                             Example: --ranking_method best_ECR weighted_ECR
   --runtime_reg (=0.1)      Regularization parameter for runtime cost in pose score 
-                            optimization (default: 0.1).
+                            optimization.
 
 Pipeline Selection:
   --corr_range (=0.1)       Allowed range of Spearman correlation for selecting a pipeline 
@@ -104,8 +109,10 @@ Interaction Analysis:
   --interacting_chains  [INTERACTING_CHAINS ...]
                             Chains to include in protein-ligand interactions (default: X).
   --key_residues  [KEY_RESIDUES ...]
-                            Key residues for interaction filtration can be given manually (e.g., "123A 124B"). 
-                            If None, the top four frequent interacting residues from active compounds will be used (default: None).
+                            Key residues for interaction filtration can be given manually 
+                            (e.g., "123A 124B"). 
+                            If None, the top four frequent interacting residues from 
+                            active compounds will be used (default: None).
 
 Diversity Selection:
   --n_clusters (=5)         Number of clusters/compounds to select in diversity selection.
@@ -113,5 +120,9 @@ Diversity Selection:
 Quality Checking:
   --pose_quality_checker    Enable pose quality checker for used docking tools
                             using PoseBusters (default: False).
-  --versatility_analysis    Enable versatility analysis to evaluate MolDockLab workflow performance.
+  --versatility_analysis    Enable versatility analysis to evaluate MolDockLab generalizability.
 ```
+---
+## License
+
+This project is licensed under the GNU GPL v3.0 License - see the [LICENSE.md](https://https://github.com/volkamerlab/ECFT-VS-pipeline/blob/main/LICENSE) file for details.

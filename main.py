@@ -375,7 +375,7 @@ def main(args):
         return
 
     # Interaction analysis
-    logger.info("🔷 Performing the interaction analysis using PLIPify ⏳")
+    logger.info("🔷 Performing the interaction analysis using PLIPify ⏳⏳")
     try:
         actives_path = actives_extraction( 
             OUTPUT / 'allposes.sdf', 
@@ -384,6 +384,7 @@ def main(args):
             )
 
         actives_paths = split_sdf_path(actives_path)
+        os.remove(actives_path)
         for chain in args.interacting_chains:
             interx_csv = OUTPUT / f'{protein_name}_{chain}_interx.csv'
             if interx_csv.is_file():

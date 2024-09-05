@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from pathlib import Path
 from rdkit.Chem import Draw
-from sklearn.model_selection import train_test_split
+#from sklearn.model_selection import train_test_split
 from argparse import ArgumentParser, ArgumentTypeError
 
 from src.ranking import *
@@ -20,8 +20,8 @@ from src.docking import docking, poses_checker
 from src.rescoring import rescoring_function
 from src.preprocessing import (
     merge_activity_values, 
-    hdbscan_scaffold_split, 
-    cv_split, 
+#    hdbscan_scaffold_split, 
+#    cv_split, 
     norm_scores
     )
 from src.pose_score_optimization import (
@@ -65,6 +65,7 @@ ALLOWED_RANKING_METHODS = ['best_ECR',
                             'best_Zscore',
                             'average_Zscore',
                             'weighted_ECR']
+
 def validate_docking_programs(programs):
     """Validate that the provided docking programs are in the allowed list."""
     for program in programs:
@@ -107,6 +108,7 @@ def get_parser():
     parser.add_argument('--protein_name', type=str, default=None, help='The name of the protein')
     parser.add_argument('--n_cpus', default=1, type=int, help='The number of CPUs to use in the workflow for Rescoring and ranking steps.')
     parser.add_argument('--out_dir', type=str, default='output', help='The output directory to save the results.')
+    parser.add_argument('--verbose', action='store_true', default=False, help='Showing detailed output.')
 
     # docking args
     parser.add_argument(
@@ -118,7 +120,7 @@ def get_parser():
     )
     parser.add_argument('--n_poses', default=10, type=int, help='The number of poses to generate per docking tool')
     parser.add_argument('--exhaustiveness', default=8, type=int, help='The exhaustiveness of the docking program for SMINA and GNINA docking tools')
-    parser.add_argument('--local_diffdock', default=False, type=bool, help='Whether to use local diffdock or not. Only recommended when in case DiffDock doesn\'t predict the binding pocket correctly')
+    parser.add_argument('--local_diffdock', default=False,  action='store_true', help='Whether to use local diffdock or not. Only recommended when in case DiffDock doesn\'t predict the binding pocket correctly')
 
     # rescoring args
     parser.add_argument(
@@ -150,14 +152,16 @@ def get_parser():
     parser.add_argument('--key_residues', nargs='+', default=None, help='The key residues for protein-ligand interactions to consider in the interaction filtration. If None, The top four frequent interacting residues found in active compounds are considered. added by resdiue number + chain, e.g. 123A 124B , etc')
 
     # diversity selection args
-    parser.add_argument('--n_clusters', type=int, default=5, help='The number of clusters/compounds to select in the diversity selection step')
+    parser.add_argument('--n_clusters', type=int, default=5, help='The number of clusters that the centroids (central compounds) are selected in the diversity selection step')
 
     # Quality checker args
-    parser.add_argument('--pose_quality_checker', default=False, type=bool, help='Whether to use pose quality checker for generated poses using PoseBusters')
-    parser.add_argument('--versatility_analysis', default=False, type=bool, help='Whether to use the versatility analysis to check the performance of the MolDockLab workflow')
+    parser.add_argument('--pose_quality_checker', default=False, action='store_true', help='Whether to use pose quality checker for generated poses using PoseBusters')
+    parser.add_argument('--versatility_analysis', default=False, action='store_true', help='Whether to use the versatility analysis to check the performance of the MolDockLab workflow')
 
 
     return parser
+
+VERBOSE = get_parser().parse_args().verbose
 
 def main(args):
 
@@ -579,5 +583,5 @@ if __name__ == "__main__":
     validate_docking_programs(args.docking_programs)
     validate_scoring_functions(args.rescoring)
     validate_ranking_methods(args.ranking_method)
-    
+    VERBOSE = args.verbose
     main(args)

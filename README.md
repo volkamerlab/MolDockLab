@@ -25,13 +25,14 @@ MolDockLab was used in a real case study to find potential hits for an antibacte
 
 ---
 ## Installation
+1. Clone the repository and open a terminal from MolDockLab directory
 
-Thanks to the [Installation guide of DockM8](https://github.com/DrugBud-Suite/DockM8/blob/main/DockM8_Installation_Guide.pdf), the environment was adapted to meet the needs of **MolDockLab**. It can be installed using the provided `setup_py310.sh` after opening the terminal in the `MolDockLab` directory, through installation script:
+2. Excuting the provided bash script `setup_py310.sh` by:
 
 ```
 bash ./setup_py310.sh
 ```
-For more details or for running on windows, please refer to the the [installation guide of DockM8](https://github.com/DrugBud-Suite/DockM8/blob/main/DockM8_Installation_Guide.pdf).
+Thanks to the [DockM8](https://github.com/DrugBud-Suite/DockM8/blob/main/), the environment was adapted to meet the needs of **MolDockLab**. For more details or for running on windows, please refer to the [installation guide of DockM8](https://github.com/DrugBud-Suite/DockM8/blob/main/DockM8_Installation_Guide.pdf).
 
 ---
 ## Usage
@@ -68,7 +69,7 @@ Optional args:
 --protein_name            Protein name for documentation (optional).
 --n_cpus (=1)             Number of CPUs to use for rescoring and ranking.
 --out_dir                 Directory to save results (default: "output").
-
+--verbose                 For detailed output.
 
 Docking Options:
 
@@ -78,7 +79,7 @@ Docking Options:
                           Example: --docking_programs gnina smina diffdock
 --n_poses (=10)           Number of poses to generate per docking tool.
 --exhaustiveness (=8)     Exhaustiveness for SMINA/GNINA docking tools.
---local_diffdock (False)  Use local DiffDock for predictions (default: False), only 
+--local_diffdock (False)  Use local DiffDock for predictions, only 
                           recommended for wrong binding pocket prediction of normal 
                           DiffDock.
 
@@ -109,8 +110,10 @@ Ranking Methods:
 Pipeline Selection:
 
 --corr_range (=0.1)       Allowed range of Spearman correlation for selecting a pipeline 
-                        with the lowest runtime cost.
---ef_range (=0.5)         Enrichment factor range for selecting the best pipeline.
+                          with the lowest runtime cost from the highest spearman
+                          correlation pipeline.
+--ef_range (=0.5)         Enrichment factor range for selecting the best balanced 
+			  pipeline from the highest correlation pipeline.
 
 
 Interaction Analysis:
@@ -132,7 +135,7 @@ Diversity Selection:
 Quality Checking:
 
 --pose_quality_checker    Enable pose quality checker for used docking tools
-                          using PoseBusters (default: False).
+                          using PoseBusters.
 --versatility_analysis    Enable versatility analysis to evaluate MolDockLab versatility.
 ```
 ---

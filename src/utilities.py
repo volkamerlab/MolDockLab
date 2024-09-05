@@ -4,9 +4,9 @@ import csv
 import subprocess
 import requests
 import zipfile
-from pathlib import Path
-
 import pandas as pd
+
+from pathlib import Path
 
 from rdkit import Chem
 from Bio import SeqIO
@@ -14,19 +14,24 @@ from Bio.Data import IUPACData
 from Bio.PDB import PDBParser
 from itertools import combinations, product
 
-
 def run_command(cmd: str):
     """
     Run a command in the shell
     Args:
         cmd(str): Command to run
     """
+    from moldocklab import VERBOSE
     try:
-        subprocess.call(cmd,
-                        shell=True,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.STDOUT
-                        )
+        if VERBOSE:
+            subprocess.call(cmd,
+                            shell=True,
+                            )
+        elif not VERBOSE:
+            subprocess.call(cmd,
+                            shell=True,
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.STDOUT
+                            )
     except Exception as e:
         print(e)
         print(f'Error occured while running {cmd}')

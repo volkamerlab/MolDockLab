@@ -129,21 +129,26 @@ else
 
     conda config --add channels conda-forge
 
-    conda install rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt chembl_structure_pipeline tqdm plip ambertools schrodinger::pymol bioconda/label/cf201901::muscle -q -y
+    conda install rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt chembl_structure_pipeline tqdm plip ambertools -y
+    
+    conda install conda-forge::pymol-open-source bioconda/label/cf201901::muscle -y
 
     echo -e """
     ###############################################################
     # Installing Pip packages, please wait...
     ###############################################################
-    """
+    """   
 
-    pip install pymesh oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl tensorflow meeko posebusters hdbscan e3nn "fair-esm[esmfold]" pydantic dgl==1.1.3 plotly bravado black pybel -q
-
-    pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
-
-    pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
     
-    pip install -U kaleido
+    pip install pymesh oddt prody==2.4.1 redo MDAnalysis Pebble tensorflow==2.15 keras==2.15 meeko posebusters hdbscan e3nn pydantic plotly bravado black pybel 
+
+    pip3 install torch==2.2.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu 
+    
+    pip install -U kaleido fair-esm[esmfold]==2.0.0
+
+    pip install torch_scatter torch_sparse==0.6.17 torch_spline_conv torch_cluster==1.6.0 torch_geometric 
+
+	pip install dgl -f https://data.dgl.ai/wheels/torch-2.2/repo.html 
     echo -e """
     ###############################################################
     # Finished installing pip packages
@@ -231,15 +236,10 @@ cd $BASEDIR
 
 echo -e """
 ###############################################################
-# MolDockLab installation complete
+############## MolDockLab installation complete ###############
 ###############################################################
 """
 ###############################################################
-echo -e """
-###############################################################
-# Checking installation success
-###############################################################
-"""
 
 # Check if conda environment is present in the list of environments
 if conda env list | grep -q $ENV_NAME; then
@@ -248,17 +248,8 @@ else
     echo -e "\nINSTALLATION ERROR : MolDockLab conda environment is not present!"
 fi
 
-# Check if required packages are installed in the $ENV_NAME environment
-required_packages=("rdkit" "ipykernel" "scipy" "spyrmsd" "kneed" "scikit-learn-extra" "molvs" "seaborn" "xgboost" "openbabel" "pymesh" "oddt" "biopandas" "redo" "MDAnalysis==2.0.0" "prody==2.1.0" "dgl" "tensorflow" "meeko" "posebusters" "torch" "torchvision" "torchaudio" "torch_scatter" "torch_sparse" "torch_spline_conv" "torch_cluster" "torch_geometric" "hdbscan" "e3nn")
 
-for package in "${required_packages[@]}"; do
-    if conda list -n $ENV_NAME "$package" &> /dev/null; then
-        echo -e "$package is installed in the $ENV_NAME environment!"
-    else
-        echo -e "\nINSTALLATION ERROR : $package is not installed in the $ENV_NAME environment!"
-    fi
 
 conda activate $ENV_NAME
 cd $MolDockLab_FOLDER
 
-done

@@ -1,6 +1,7 @@
 # MolDockLab
 
-MolDockLab is a **data-driven workflow** designed to identify the best balanced consensus **Structure-Based Virtual Screening (SBVS)** workflow for a target of interest. The workflow integrates various **docking tools**, **scoring functions**, and **consensus methods** to achieve optimal screening performance.
+MolDockLab is a **data-driven workflow** developed to identify the best balanced consensus **Structure-Based Virtual Screening (SBVS)** workflow for a target of interest.
+The workflow integrates 5 **docking tools**, 15 **scoring functions**, and 9 **consensus ranking methods** to select the best balanced consensus SBVS for an experimentally-validated dataset. Once selected, the workflow can be applied on larger ligands library, achieving optimal screening performance for hit identification.
 
 As a validation case study, the workflow was applied to the **EGFR target** (Epidermal Growth Factor Receptor) to compare different SBVS pipelines and assess their relative performance. Results can be found in `egfr_data/`.
 

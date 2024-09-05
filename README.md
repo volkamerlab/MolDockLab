@@ -42,7 +42,7 @@ Thanks to the [DockM8](https://github.com/DrugBud-Suite/DockM8/blob/main/), the 
 To execute the workflow, run the `moldocklab.py` script with your desired parameters. Make sure your input data is ready. You can also use the provided test data in `test_data/` for smaller-scale testing. For reproducibility, the following command can be used with the test data:
 
 ```
-python moldocklab.py --protein_path test_data/5UG9_noligand_protoss.pdb --ref_ligand_path test_data/ref_ligand.pdb --known_ligands_path test_data/test_three_cpds.sdf --sbvs_ligands_path test_data/test_library_10_cpds.sdf --out_dir test_output --true_value_col true_value --docking_programs gnina smina diffdock plants --pose_quality_checker True 
+python moldocklab.py --protein_path test_data/5UG9_noligand_protoss.pdb --ref_ligand_path test_data/ref_ligand.pdb --known_ligands_path test_data/test_three_cpds.sdf --sbvs_ligands_path test_data/test_library_10_cpds.sdf --out_dir test_output --true_value_col true_value --docking_programs gnina smina diffdock plants --pose_quality_checker 
 ```
 For step-by-step tutorial, the steps in `test_run.ipynb` can be followed.
 

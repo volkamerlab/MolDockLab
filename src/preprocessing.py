@@ -31,8 +31,9 @@ def  merge_activity_values(
                 of the compound, docking tool and number of the pose, e.g. XXXX_plants_01
         mols_true_value_path (pathlib.Path) : Path of true value in SDF format with the unique ID
         true_value_col (str) : column name of experimental value
-        unique_id_col (str) : column name of ID
+        scored_id_col (str) : column name of ID
         activity_col (str) : column name of activity class
+        lower_better_true_value (bool) : True if the lower value of the experimental value is better (IC50)
         threshold (float) : correlation threshold
 
     Return:
@@ -56,14 +57,10 @@ def  merge_activity_values(
         group.loc[:, activity_col] = true_values_df[true_values_df['ID']
                                                     == group['id'].iloc[0]][activity_col].values[0]
 
-        df_rescored.loc[group.index,
-                        true_value_col] = group[true_value_col].values[0]
-        df_rescored.loc[group.index,
-                        activity_col] = group[activity_col].values[0]
+        df_rescored.loc[group.index, true_value_col] = group[true_value_col].values[0]
+        df_rescored.loc[group.index, activity_col] = group[activity_col].values[0]
     if lower_better_true_value:
-        df_rescored.loc[:,
-                        true_value_col] = df_rescored.loc[:,
-                                                          true_value_col] * -1
+        df_rescored.loc[:,true_value_col] = df_rescored.loc[:,true_value_col] * -1
     df_rescored.drop(['pose'], axis=1, inplace=True)
     df_rescored.rename(columns={true_value_col: 'true_value'}, inplace=True)
 

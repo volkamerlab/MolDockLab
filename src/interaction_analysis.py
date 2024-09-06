@@ -282,12 +282,25 @@ def indiviudal_interaction_fp_generator(
         return output_dir
 
     allposes_interaction_fp = {}
+    found_interx_fp = []
+
+    if output_dir.is_file():
+        found_interx_fp = json.load(output_dir)
+        found_interx_fp = {k: set(v) for k, v in allposes_interaction_fp.items()}
+    if (output_dir.parent / 'allposes_interaction_fps_final.csv').is_file():
+        found_interx_fp = pd.read_csv(output_dir.parent / 'allposes_interaction_fps_final.csv')['Poses'].tolist()
+    
     for i, sdf in enumerate(sdfs_path):
+        if sdf.stem in found_interx_fp:
+            print(f"Interactions for {sdf.stem} are already calculated.")
+            continue
+            
         fp = plipify_fp_interaction(
             sdf, protein_file, protein_name, included_chains, output_dir)
         allposes_interaction_fp.update(fp)
         if i % 1000 == 0 and i != 0:
             _write_json(allposes_interaction_fp, str(output_dir))
+            print(f"Interaction for poses between {i-1000} and {i} and total of {i} poses are saved in JSON file to {output_dir}.")
 
     _write_json(allposes_interaction_fp, str(output_dir))
     shutil.rmtree(sdfs_path[0].parent)

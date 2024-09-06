@@ -663,8 +663,6 @@ def _read_rescoring_results(
 
                 for sdf in rescore_path.glob('*.sdf'):
                     df = _read_sdf_values_and_names(sdf)
-                    print(df)
-                    # chech if df is empty
                     if df.empty:
                         continue
                     if 'cnnscore' == rescore_program:

@@ -69,21 +69,21 @@ ALLOWED_RANKING_METHODS = ['best_ECR',
 def validate_docking_programs(programs):
     """Validate that the provided docking programs are in the allowed list."""
     for program in programs:
-        if program not in ALLOWED_DOCKING_PROGRAMS:
+        if program not in ALLOWED_DOCKING_PROGRAMS and program != 'all':
             raise ArgumentTypeError(f"'{program}' is not a valid docking program. Allowed values are: {', '.join(ALLOWED_DOCKING_PROGRAMS)}")
     return programs
 
 def validate_scoring_functions(functions):
     """Validate that the provided scoring functions are in the allowed list."""
     for function in functions:
-        if function not in ALLOWED_SCORING_FUNCTIONS:
+        if function not in ALLOWED_SCORING_FUNCTIONS and function != 'all':
             raise ArgumentTypeError(f"'{function}' is not a valid scoring function. Allowed values are: {', '.join(ALLOWED_SCORING_FUNCTIONS)}")
     return functions
 
 def validate_ranking_methods(methods):
     """Validate that the provided ranking methods are in the allowed list."""
     for method in methods:
-        if method not in ALLOWED_RANKING_METHODS:
+        if method not in ALLOWED_RANKING_METHODS and method != 'all':
             raise ArgumentTypeError(f"'{method}' is not a valid ranking method. Allowed values are: {', '.join(ALLOWED_RANKING_METHODS)}")
     return methods
 def valid_file_path(path):
@@ -98,7 +98,7 @@ def get_parser():
     # Required arguments
     parser.add_argument('--protein_path', type=valid_file_path, required=True, help='Path to the protein file')
     parser.add_argument('--ref_ligand_path', type=valid_file_path, required=True, help='Path to the reference ligand file')
-    parser.add_argument('--known_ligands_path', type=valid_file_path, required=True, help='Path to the experimentally validated ligands library')
+    parser.add_argument('--known_ligands_path', type=valid_file_path, required=True, help='Path to the experimentally validated ligands library. Known ligand library has to include the true value column and the activity class column')
     parser.add_argument('--sbvs_ligands_path', type=valid_file_path, required=True, help='Path to the larger ligands library for SBVS')
     parser.add_argument('--true_value_col', type=str, required=True, help='The column name of the true value in the ligands library')
 
@@ -109,6 +109,7 @@ def get_parser():
     parser.add_argument('--n_cpus', default=1, type=int, help='The number of CPUs to use in the workflow for Rescoring and ranking steps.')
     parser.add_argument('--out_dir', type=str, default='output', help='The output directory to save the results.')
     parser.add_argument('--verbose', action='store_true', default=False, help='Showing detailed output.')
+    parser.add_argument('--true_value_scale', default=False,  action='store_true', help='Whether the true value is lower the better or not, e.g. (IC50 values). default is False (higher the better e.g. pIC50)')
 
     # docking args
     parser.add_argument(
@@ -152,11 +153,12 @@ def get_parser():
     parser.add_argument('--key_residues', nargs='+', default=None, help='The key residues for protein-ligand interactions to consider in the interaction filtration. If None, The top four frequent interacting residues found in active compounds are considered. added by resdiue number + chain, e.g. 123A 124B , etc')
 
     # diversity selection args
+    parser.add_argument('--diversity_selection', action='store_true', help='Whether to use diversity selection step or not')
     parser.add_argument('--n_clusters', type=int, default=5, help='The number of clusters that the centroids (central compounds) are selected in the diversity selection step')
 
     # Quality checker args
-    parser.add_argument('--pose_quality_checker', default=False, action='store_true', help='Whether to use pose quality checker for generated poses using PoseBusters')
-    parser.add_argument('--versatility_analysis', default=False, action='store_true', help='Whether to use the versatility analysis to check the performance of the MolDockLab workflow')
+    parser.add_argument('--pose_quality_checker', action='store_true', help='Whether to use pose quality checker for generated poses using PoseBusters')
+    parser.add_argument('--versatility_analysis', action='store_true', help='Whether to use the versatility analysis to check the performance of the MolDockLab workflow')
 
 
     return parser
@@ -203,6 +205,10 @@ def main(args):
     
     logger.info(f"🔷 Docking the experimentally validated ligands library with experimental data using {args.docking_programs}⏳⏳")
     try:
+        if 'all' in args.docking_programs:
+            
+            args.docking_programs = ALLOWED_DOCKING_PROGRAMS
+            print(args.docking_programs)
         docking(
                 docking_methods=args.docking_programs,
                 protein_file=HERE / args.protein_path,
@@ -229,6 +235,8 @@ def main(args):
 
     logger.info(f"🔷 Rescoring the docking results for experimentally validated ligands using SFs: {args.rescoring} ⏳⏳")
     try:
+        if 'all' in args.rescoring:
+            args.rescoring = ALLOWED_SCORING_FUNCTIONS
         rescoring_function(
             rescoring_programs=args.rescoring, 
             protein_path=HERE / args.protein_path,
@@ -248,6 +256,7 @@ def main(args):
             mols_true_value_path=(HERE / args.known_ligands_path), 
             true_value_col=args.true_value_col,
             scored_id_col=args.id_col,
+            lower_better_true_value=args.true_value_scale,
             activity_col=args.activity_col,
             threshold=args.corr_threshold
             )
@@ -272,6 +281,9 @@ def main(args):
         logger.error(f"❗An error occured while normalizing the predicted scores: {e}")
         return
     
+    if 'all' in args.ranking_method:
+        args.ranking_method = ALLOWED_RANKING_METHODS
+
     if 'weighted_ECR' in args.ranking_method:
         try:
             logger.info("🔷 Performing the pose score optimization for experimentally validated ligands ⏳")
@@ -336,6 +348,7 @@ def main(args):
             f"🕵️‍♂️ The best balanced pipeline uses for docking: {selected_workflow['docking_tool']}\n"
             f"\tand for SF(s): {selected_workflow['scoring_function']}\n" 
             f"\twith a Spearman correlation of {selected_workflow['spearman_correlation']}\n"
+            f"\tand an enrichment factor of {selected_workflow['enrichment_factor']}\n"
             f"\ta cost of {selected_workflow['cost_per_pipeline']}\n")
         
         selected_docking_tools = ast.literal_eval(selected_workflow['docking_tool'])
@@ -349,7 +362,7 @@ def main(args):
 
     # screen the larger ligands library for SBVS
     logger.info("Screening the larger ligands library for SBVS ⏳⏳⏳")
-    larger_data_output = OUTPUT / 'larger_data_output'
+    larger_data_output = OUTPUT / Path(args.sbvs_ligands_path).stem
     larger_data_output.mkdir(exist_ok=True, parents=True)
 
     logger.info("🔷 Preparing the larger ligands library for docking using Gypsum-DL 1.2.1 ⏳")
@@ -413,6 +426,7 @@ def main(args):
         rescored_df_sbvs = pd.read_csv(larger_data_output / 'rescoring_results' / 'all_rescoring_results.csv')
         rescored_df_sbvs_norm = norm_scores(rescored_df_sbvs)
         if selected_ranking_method == 'method9_weighted_ECR_best':
+            print(normalized_weights)
             ranked_sbvs_ligands = ranking_methods_dict[selected_ranking_method](
                 df=rescored_df_sbvs_norm,
                 selected_scores=selected_sfs,
@@ -519,40 +533,40 @@ def main(args):
     
 
     # @TODO : Add the diversity selection step and visualize the selected compounds
+    if args.diversity_selection:
+        logger.info("🔷 Select the most diverse number of compounds ...")
+        try:
+            if merged_df is None:
+                merged_df = pd.read_csv(larger_data_output / 'ranked_selected_interx_ligands.csv')
+            clustered_df = diversity_selection(ranked_interx_df=merged_df,
+                                            sdf= HERE / args.sbvs_ligands_path,
+                                            id_col=args.id_col,
+                                            n_clusters=args.n_clusters
+                                            )
+            selected_diverse = clustered_df[clustered_df['diversity_selection'] == 1]
 
-    logger.info("🔷 Select the most diverse number of compounds ...")
-    try:
-        if merged_df is None:
-            merged_df = pd.read_csv(larger_data_output / 'ranked_selected_interx_ligands.csv')
-        clustered_df = diversity_selection(ranked_interx_df=merged_df,
-                                           sdf= HERE / args.sbvs_ligands_path,
-                                           id_col=args.id_col,
-                                           n_clusters=args.n_clusters
-                                           )
-        selected_diverse = clustered_df[clustered_df['diversity_selection'] == 1]
+            # Visualize the selected compounds in a high quality photo
+            options = Draw.MolDrawOptions()
+            options.legendFontSize = 25  
+            options.atomLabelFontSize = 20 
+            drawer = Draw.MolDraw2DSVG(3*500, 3*500, 500, 500)  
+            drawer.SetDrawOptions(options)
+            img = Draw.MolsToGridImage(
+                selected_diverse['ROMol'], 
+                molsPerRow=5, 
+                subImgSize=(500, 500), 
+                legends=[f"{row['ID']}" for idx, row in selected_diverse.iterrows()],
+                drawOptions=drawer.drawOptions()
+            )
 
-        # Visualize the selected compounds in a high quality photo
-        options = Draw.MolDrawOptions()
-        options.legendFontSize = 25  
-        options.atomLabelFontSize = 20 
-        drawer = Draw.MolDraw2DSVG(3*500, 3*500, 500, 500)  
-        drawer.SetDrawOptions(options)
-        img = Draw.MolsToGridImage(
-            selected_diverse['ROMol'], 
-            molsPerRow=5, 
-            subImgSize=(500, 500), 
-            legends=[f"{row['ID']}" for idx, row in selected_diverse.iterrows()],
-            drawOptions=drawer.drawOptions()
-        )
-
-        # Save the image to a file
-        img.save(OUTPUT / "final_compound_selection.png")
-        selected_diverse.to_csv(larger_data_output / 'selected_diverse_ligands.csv', index=False)
-        logger.info(f"✅ Selected diverse ligands are saved at {larger_data_output / 'Final_compounds_selection.csv'}")
-        logger.info(f"The selected compounds are visualized in {OUTPUT / 'final_compound_selection.png'}")
-    except Exception as e:
-        logger.error(f"❗An error occured while selecting the most diverse number of compounds: {e}")
-        return
+            # Save the image to a file
+            img.save(OUTPUT / "final_compound_selection.png")
+            selected_diverse.to_csv(larger_data_output / 'selected_diverse_ligands.csv', index=False)
+            logger.info(f"✅ Selected diverse ligands are saved at {larger_data_output / 'Final_compounds_selection.csv'}")
+            logger.info(f"The selected compounds are visualized in {OUTPUT / 'final_compound_selection.png'}")
+        except Exception as e:
+            logger.error(f"❗An error occured while selecting the most diverse number of compounds: {e}")
+            return
     logger.info("\n\n🏁 MolDockLab workflow is completed successfully 🏁\n\n")
     
     # @TODO : Add versatility analysis step

@@ -213,7 +213,7 @@ fi
 if [[ ! -d $MolDockLab_FOLDER/software/SCORCH ]]; then
     echo -e "\nCloning SCORCH!"
     cd $MolDockLab_FOLDER/software
-    git clone git@github.com:hamzaibrahim21/SCORCH.git
+    git clone git@github.com:SMVDGroup/SCORCH.git
     cd $MolDockLab_FOLDER  # Return to the original directory
 fi
 

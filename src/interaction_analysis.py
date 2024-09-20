@@ -65,8 +65,8 @@ def plipify_fp_interaction(
                     remove_empty_interaction_types=True,
                     ensure_same_sequence=False,
                 )
-            except BaseException:
-                print(f"Empty fingerprint for {cpx.stem}")
+            except BaseException as e:
+                print(f"Empty fingerprint for {cpx.stem}, {e}")
                 continue
             if fp is None:
                 print(f"Empty fingerprint for {cpx.stem}")

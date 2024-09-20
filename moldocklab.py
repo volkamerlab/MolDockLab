@@ -380,16 +380,18 @@ def main(args):
     
     logger.info(f"🔷 Docking the larger ligands library with unknown experimental data using {selected_workflow['docking_tool']}⏳⏳")
     try:
-        docking(
-                docking_methods=selected_docking_tools,
-                protein_file=HERE / args.protein_path,
-                ligands_path=HERE / output_prepared_mols,
-                ref_file=HERE / args.ref_ligand_path,
-                exhaustiveness=args.exhaustiveness,
-                n_poses=args.n_poses,
-                OUTPUT=larger_data_output,
-                local_diffdock=args.local_diffdock,
-                )
+        if not (larger_data_output / 'allposes.sdf').is_file():
+
+            docking(
+                    docking_methods=selected_docking_tools,
+                    protein_file=HERE / args.protein_path,
+                    ligands_path=HERE / output_prepared_mols,
+                    ref_file=HERE / args.ref_ligand_path,
+                    exhaustiveness=args.exhaustiveness,
+                    n_poses=args.n_poses,
+                    OUTPUT=larger_data_output,
+                    local_diffdock=args.local_diffdock,
+                    )
         logger.info(f"✅ Docking results are saved at {larger_data_output / 'allposes.sdf'}")
     except Exception as e:
         logger.error(f"❗An error occured while docking the larger ligands library: {e}")
@@ -426,7 +428,6 @@ def main(args):
         rescored_df_sbvs = pd.read_csv(larger_data_output / 'rescoring_results' / 'all_rescoring_results.csv')
         rescored_df_sbvs_norm = norm_scores(rescored_df_sbvs)
         if selected_ranking_method == 'method9_weighted_ECR_best':
-            print(normalized_weights)
             ranked_sbvs_ligands = ranking_methods_dict[selected_ranking_method](
                 df=rescored_df_sbvs_norm,
                 selected_scores=selected_sfs,
@@ -492,27 +493,31 @@ def main(args):
     logger.info("🔷 Filtering compounds with specific interactions ⏳⏳")
     try:
         interactions_dict_path = larger_data_output / 'fp_allposes.json'
-        if not interactions_dict_path.is_file():
-            ligands_paths = split_sdf_path(larger_data_output / 'allposes.sdf')
-            allposes_interaction_fp = indiviudal_interaction_fp_generator(
-                                sdfs_path=ligands_paths, 
-                                protein_file=args.protein_path, 
-                                protein_name=protein_name, 
-                                included_chains=args.interacting_chains, 
-                                output_dir=interactions_dict_path
+        selected_ligands_interx = larger_data_output / 'selected_ligands_interaction.csv'
+        if selected_ligands_interx.is_file():
+            logger.info(f"✅ Selected ligands with specific interactions are already saved at {selected_ligands_interx}")
+        else:
+            if not interactions_dict_path.is_file():
+                ligands_paths = split_sdf_path(larger_data_output / 'allposes.sdf')
+                allposes_interaction_fp = indiviudal_interaction_fp_generator(
+                                    sdfs_path=ligands_paths, 
+                                    protein_file=args.protein_path, 
+                                    protein_name=protein_name, 
+                                    included_chains=args.interacting_chains, 
+                                    output_dir=interactions_dict_path
+                                    )
+            interactions_df = read_interactions_json(
+                        json_file=interactions_dict_path, 
+                        output_file=larger_data_output / 'allposes_interaction_fps_final.csv'
+                        )
+            agg_interx_df = interactions_aggregation(
+                                interactions_df=interactions_df.reset_index(),
+                                important_interactions=key_interactions_resno,
+                                id_column='Poses'
                                 )
-        interactions_df = read_interactions_json(
-                    json_file=interactions_dict_path, 
-                    output_file=larger_data_output / 'allposes_interaction_fps_final.csv'
-                    )
-        agg_interx_df = interactions_aggregation(
-                            interactions_df=interactions_df.reset_index(),
-                            important_interactions=key_interactions_resno,
-                            id_column='Poses'
-                            )
-        agg_interx_df.replace(0, np.nan, inplace=True)
-        agg_interx_df.dropna(inplace=True)
-        agg_interx_df.to_csv(larger_data_output / 'selected_ligands_interaction.csv', index=False)
+            agg_interx_df.replace(0, np.nan, inplace=True)
+            agg_interx_df.dropna(inplace=True)
+            agg_interx_df.to_csv(larger_data_output / 'selected_ligands_interaction.csv', index=False)
         
         logger.info(f"✅ Selected ligands with specific interactions are saved at {larger_data_output / 'selected_ligands_interaction.csv'}")
     except Exception as e:
@@ -561,7 +566,7 @@ def main(args):
 
             # Save the image to a file
             img.save(OUTPUT / "final_compound_selection.png")
-            selected_diverse.to_csv(larger_data_output / 'selected_diverse_ligands.csv', index=False)
+            selected_diverse.to_csv(larger_data_output / 'final_compound_selection.csv', index=False)
             logger.info(f"✅ Selected diverse ligands are saved at {larger_data_output / 'Final_compounds_selection.csv'}")
             logger.info(f"The selected compounds are visualized in {OUTPUT / 'final_compound_selection.png'}")
         except Exception as e:

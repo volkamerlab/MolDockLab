@@ -761,23 +761,19 @@ def _read_rescoring_results(
                 dfs.append(df)
 
         if 'scorch' == rescore_program:
-            for csv_file in (
-                    rescoring_results_path /
-                    rescore_program).glob('*.csv'):
-                df = pd.read_csv(csv_file)[['Ligand_ID', 'SCORCH_pose_score']]
-                df['ID'] = PandasTools.LoadSDF(str(
-                    rescoring_results_path.parent / 'sdf_split' / f"{df.loc[0, 'Ligand_ID']}.sdf"))['ID']
+            for csv_file in (rescoring_results_path / rescore_program).glob('*.csv'):
+                df = pd.read_csv(csv_file)[['SCORCH_pose_score', 'Pose_Number']].sort_values('Pose_Number', ignore_index=True)
+                df['ID'] = PandasTools.LoadSDF(str(rescoring_results_path.parent / 'sdf_split' / f"{df.loc[0, 'Ligand_ID']}.sdf"))['ID']
                 df.rename(columns={'SCORCH_pose_score': 'SCORCH'}, inplace=True)
-                dfs.append(df.drop(columns=['Ligand_ID']))
+                dfs.append(df)
 
         if 'hyde' == rescore_program:
             for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):
-                df = _read_sdf_values_and_names(
-                    sdf)[['ID', 'BIOSOLVEIT.HYDE_ESTIMATED_AFFINITY_LOWER_BOUNDARY [nM]']]
+                df = _read_sdf_values_and_names(sdf)[['ID', 'BIOSOLVEIT.HYDE_ESTIMATED_AFFINITY_LOWER_BOUNDARY [nM]']]
                 df.rename(
-                    columns={
-                        'BIOSOLVEIT.HYDE_ESTIMATED_AFFINITY_LOWER_BOUNDARY [nM]': 'HYDE'},
-                    inplace=True)
+                    columns={'BIOSOLVEIT.HYDE_ESTIMATED_AFFINITY_LOWER_BOUNDARY [nM]': 'HYDE'},
+                    inplace=True,
+                    )
                 dfs.append(df)
 
         csv_file = pd.concat(dfs, ignore_index=True)

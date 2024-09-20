@@ -165,3 +165,8 @@ cython_debug/
 
 ecft_data/
 ecft_data/*
+lasb_data*
+LasB_pipeline.ipynb
+test_output*
+RFScore_v*
+

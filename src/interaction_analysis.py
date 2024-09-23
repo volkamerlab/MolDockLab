@@ -329,7 +329,6 @@ def _write_json(allposes_interaction_fp: pd.DataFrame, output_path: str):
 def interactions_aggregation(
         interactions_df: pd.DataFrame,
         important_interactions: list,
-        id_column:str='ID'
         ) -> pd.DataFrame:
     """
     This function aggregates the interactions based on the important interactions
@@ -340,7 +339,7 @@ def interactions_aggregation(
     Returns:
         aggregated_df: DataFrame of the aggregated interactions
     """
-    interactions_df['id'] = interactions_df[id_column].str.split('_').str[0]
+    interactions_df['id'] = interactions_df['Poses'].str.split('_').str[0]
     aggregated_df = interactions_df.groupby('id').sum()
     return aggregated_df[important_interactions].reset_index()
 

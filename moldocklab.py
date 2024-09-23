@@ -8,7 +8,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from pathlib import Path
-from rdkit.Chem import Draw
+from rdkit import Chem
+from rdkit.Chem import Draw, PandasTools
 #from sklearn.model_selection import train_test_split
 from argparse import ArgumentParser, ArgumentTypeError
 
@@ -442,7 +443,8 @@ def main(args):
                 weight=0.05,
                 )
         ranked_sbvs_ligands.sort_values(by=selected_ranking_method, ascending=False, inplace=True)
-        ranked_sbvs_ligands['ID'] = ranked_sbvs_ligands.ID.str.split('_').str[0]
+        ranked_sbvs_ligands.rename(columns={'ID': 'full_ID'}, inplace=True)
+        ranked_sbvs_ligands['ID'] = ranked_sbvs_ligands.full_ID.str.split('_').str[0]
         ranked_sbvs_ligands.drop_duplicates(subset='ID', keep='first', inplace=True)
         ranked_sbvs_ligands.to_csv(larger_data_output / 'ranked_ligands.csv', index=False)
         logger.info(f"✅ Ranked unknown ligands are saved at {larger_data_output / 'ranked_ligands.csv'}")
@@ -454,38 +456,37 @@ def main(args):
     # Interaction analysis
     logger.info("🔷 Performing the interaction analysis using PLIPify ⏳⏳")
     try:
-        actives_path = actives_extraction( 
-            OUTPUT / 'allposes.sdf', 
-            OUTPUT / 'rescoring_results/all_rescoring_results_merged.csv', 
-            docking_tool=selected_docking_tools
-            )
-
-        actives_paths = split_sdf_path(actives_path)
-        os.remove(actives_path)
-        for chain in args.interacting_chains:
-            interx_csv = OUTPUT / f'{protein_name}_{chain}_interx.csv'
-            if interx_csv.is_file():
-                fp_focused = pd.read_csv(interx_csv)
-                continue
-            fp_focused = plipify_fp_interaction(
-                ligands_path=actives_paths, 
-                protein_path=HERE / args.protein_path, 
-                protein_name=protein_name, 
-                chains=chain,
-                output_file=OUTPUT / f'{protein_name}_interactions_{chain}.png'
+        if args.key_residues is None:
+            actives_path = actives_extraction( 
+                OUTPUT / 'allposes.sdf', 
+                OUTPUT / 'rescoring_results/all_rescoring_results_merged.csv', 
+                docking_tool=selected_docking_tools
                 )
-            fp_focused['total_interactions'] = fp_focused.sum(axis=1)
-            fp_focused.to_csv(interx_csv, index_label='residues')
-            
-        logger.info(f"✅ Protein-ligand interactions with chain {chain} are saved at {interx_csv}")
-        for chain in args.interacting_chains:
-            if args.key_residues is None:
-                fp_interx = pd.read_csv(interx_csv).sort_values(by='total_interactions', ascending=False)
-                key_interactions_resno = list(fp_interx.head(4).residues)
-                key_interactions_resno = [f'{resno}{chain}' for resno in key_interactions_resno]
-            else:
-                key_interactions_resno = args.key_residues
-            logger.info(f"🔑 Key interactions for chain {chain} with residues are: {key_interactions_resno}")
+            actives_paths = split_sdf_path(actives_path)
+            os.remove(actives_path)
+            for chain in args.interacting_chains:
+                interx_csv = OUTPUT / f'{protein_name}_{chain}_interx.csv'
+                if interx_csv.is_file():
+                    fp_focused = pd.read_csv(interx_csv)
+                    continue
+                fp_focused = plipify_fp_interaction(
+                    ligands_path=actives_paths, 
+                    protein_path=HERE / args.protein_path, 
+                    protein_name=protein_name, 
+                    chains=chain,
+                    output_file=OUTPUT / f'{protein_name}_interactions_{chain}.png'
+                    )
+                fp_focused['total_interactions'] = fp_focused.sum(axis=1)
+                fp_focused.to_csv(interx_csv, index_label='residues')
+                
+            logger.info(f"✅ Protein-ligand interactions with chain {chain} are saved at {interx_csv}")
+            for chain in args.interacting_chains:
+                    fp_interx = pd.read_csv(interx_csv).sort_values(by='total_interactions', ascending=False)
+                    key_interactions_resno = list(fp_interx.head(4).residues)
+                    key_interactions_resno = [f'{resno}{chain}' for resno in key_interactions_resno]
+        else:
+            key_interactions_resno = args.key_residues
+        logger.info(f"🔑 Key interactions for chain {args.interacting_chains} with residues are: {key_interactions_resno}")
     except Exception as e:
         logger.error(f"❗An error occured while performing the interaction analysis: {e}")
         return
@@ -513,7 +514,6 @@ def main(args):
             agg_interx_df = interactions_aggregation(
                                 interactions_df=interactions_df.reset_index(),
                                 important_interactions=key_interactions_resno,
-                                id_column='Poses'
                                 )
             agg_interx_df.replace(0, np.nan, inplace=True)
             agg_interx_df.dropna(inplace=True)
@@ -556,19 +556,21 @@ def main(args):
             options.atomLabelFontSize = 20 
             drawer = Draw.MolDraw2DSVG(3*500, 3*500, 500, 500)  
             drawer.SetDrawOptions(options)
+
+            smiles = [Chem.MolToSmiles(mol) for mol in selected_diverse['ROMol']]
             img = Draw.MolsToGridImage(
-                selected_diverse['ROMol'], 
+                [Chem.MolFromSmiles(smile) for smile in smiles], 
                 molsPerRow=5, 
-                subImgSize=(500, 500), 
+                subImgSize=(1000, 1000),
                 legends=[f"{row['ID']}" for idx, row in selected_diverse.iterrows()],
                 drawOptions=drawer.drawOptions()
             )
 
             # Save the image to a file
-            img.save(OUTPUT / "final_compound_selection.png")
-            selected_diverse.to_csv(larger_data_output / 'final_compound_selection.csv', index=False)
+            img.save(larger_data_output / "final_compound_selection.png")
+            PandasTools.WriteSDF(selected_diverse, larger_data_output / 'Final_compounds_selection.sdf', molColName='ROMol', idName='ID', properties=list(selected_diverse.columns))
             logger.info(f"✅ Selected diverse ligands are saved at {larger_data_output / 'Final_compounds_selection.csv'}")
-            logger.info(f"The selected compounds are visualized in {OUTPUT / 'final_compound_selection.png'}")
+            logger.info(f"The selected compounds are visualized in {larger_data_output / 'final_compound_selection.png'}")
         except Exception as e:
             logger.error(f"❗An error occured while selecting the most diverse number of compounds: {e}")
             return

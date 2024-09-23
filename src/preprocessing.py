@@ -130,7 +130,8 @@ def hdbscan_scaffold_split(original_data_path : Path, min_cluster_size : int) ->
     unique_scaffolds = list(set(df['scaffold'].apply(Chem.MolToSmiles)))
 
     print(f'Number of unique scaffolds: {len(unique_scaffolds)}')
-    df['scaffold_fp'] = df.scaffold.apply(_get_fp)
+    df['scaffold_fp'] = df.scaffold.apply(get_fp)
+    display(df.head())
     cluster_labels = _get_cluster_labels(
         list(df['scaffold_fp']), min_cluster_size)
     print(f'Number of HDBSCAN clusters: {len(set(cluster_labels))}')

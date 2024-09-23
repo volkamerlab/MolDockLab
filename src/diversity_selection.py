@@ -34,7 +34,9 @@ def diversity_selection(
         left_on='ID', 
         right_on=id_col
         )
+    print(merged_df)
     merged_df = merged_df[merged_df['passed_interx_filtration'] == 1].reset_index(drop=True)
+    merged_df = merged_df.head(int(0.01*len(merged_df)))
     fps = np.array([np.array(list(get_fp(mol))) for mol in merged_df['ROMol']])
     kmedoids = KMedoids(n_clusters=n_clusters, metric='jaccard', random_state=42)
     _ = kmedoids.fit_predict(fps)

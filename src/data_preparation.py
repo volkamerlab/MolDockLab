@@ -55,7 +55,7 @@ def run_gypsumdl(
     Args:
         ligand_library: Path to ligand's library
         prepared_library_path: Path to prepared library
-
+        id_column: Column name of the ID in the library
     Return: 
         Path to output file
     """

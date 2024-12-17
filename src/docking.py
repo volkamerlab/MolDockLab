@@ -142,7 +142,6 @@ def _gnina_docking(
         f' --num_modes {str(n_poses)}'
         ' --cnn_scoring rescore'
         ' --cnn crossdock_default2018'
-        ' --no_gpu'
     )
     start_time = time.time()
     if sdf_output.name not in os.listdir(sdf_output.parent):

@@ -20,22 +20,33 @@ def run_command(cmd: str):
     Args:
         cmd(str): Command to run
     """
-    from moldocklab import VERBOSE
-    try:
-        if VERBOSE:
+    if get_ipython().__class__.__name__ == 'ZMQInteractiveShell':
+        print("Running in Jupyter Notebook")
+        try:
             subprocess.call(cmd,
                             shell=True,
                             )
-        elif not VERBOSE:
-            subprocess.call(cmd,
-                            shell=True,
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.STDOUT
-                            )
-    except Exception as e:
-        print(e)
-        print(f'Error occured while running {cmd}')
-        return False
+        except subprocess.CalledProcessError as e:
+            print(e)
+            print(f'Error occured while running {cmd}')
+            return False
+    else:
+        from moldocklab import VERBOSE
+        try:
+            if VERBOSE:
+                subprocess.call(cmd,
+                                shell=True,
+                                )
+            elif not VERBOSE:
+                subprocess.call(cmd,
+                                shell=True,
+                                stdout=subprocess.DEVNULL,
+                                stderr=subprocess.STDOUT
+                                )
+        except Exception as e:
+            print(e)
+            print(f'Error occured while running {cmd}')
+            return False
 
 def _plants_pocket_generation(protein_file_mol2: Path, ref_file_mol2: Path):
     """

@@ -85,7 +85,10 @@ def rescoring_function(
             print(f'Running {program} in parallel')
             # calculate the run time for each program
             start_time = time.time()
-
+            if program == 'scorch':
+                os.chdir(str((ref_file.parent).parent / 'software/SCORCH'))
+            else:
+                os.chdir(str((ref_file.parent).parent))
             with ProcessPoolExecutor(max_workers=num_cpus) as executor:
                 _ = [
                     executor.submit(
@@ -414,7 +417,7 @@ def _scorch_rescoring(
         docked_library_path).replace('.sdf', '.pdbqt')
     ref_ligand_pdqbt = str(ref_file).replace('.pdb', '.pdbqt')
     print(
-        f'python software/SCORCH/scorch.py '
+        f'python scorch.py '
         f' --receptor {str(protein_path_pdqbt)} '
         f' --ligand {docked_library_file_pdqbt}'
         f" --ref_lig {str(ref_ligand_pdqbt)}"
@@ -423,7 +426,7 @@ def _scorch_rescoring(
         ' --threads 1'
     )
     return (
-        f'python software/SCORCH/scorch.py '
+        f'python scorch.py '
         f' --receptor {str(protein_path_pdqbt)} '
         f' --ligand {docked_library_file_pdqbt}'
         f" --ref_lig {str(ref_ligand_pdqbt)}"

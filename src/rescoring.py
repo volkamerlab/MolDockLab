@@ -109,8 +109,8 @@ def rescoring_function(
         _read_rescoring_results(results_folder, program)
 
     _merge_rescoring_results(results_folder, rescoring_programs)
-    shutil.rmtree(splitted_file_paths[0].parent)    
-    _clean_rescoring_results(rescoring_programs, results_folder)
+    # shutil.rmtree(splitted_file_paths[0].parent)    
+    # _clean_rescoring_results(rescoring_programs, results_folder)
 
 def _ad4_rescoring(
         protein_path: Path,
@@ -765,10 +765,12 @@ def _read_rescoring_results(
 
         if 'scorch' == rescore_program:
             for csv_file in (rescoring_results_path / rescore_program).glob('*.csv'):
-                df = pd.read_csv(csv_file)[['SCORCH_pose_score', 'Pose_Number']].sort_values('Pose_Number', ignore_index=True)
-                df['ID'] = PandasTools.LoadSDF(str(rescoring_results_path.parent / 'sdf_split' / f"{df.loc[0, 'Ligand_ID']}.sdf"))['ID']
+                df = pd.read_csv(csv_file)
+                sdf_file_name = f"{df.loc[0, 'Ligand_ID']}.sdf"
+                df = df[['SCORCH_pose_score', 'Pose_Number']].sort_values('Pose_Number', ignore_index=True)
+                df['ID'] = PandasTools.LoadSDF(str(rescoring_results_path.parent / 'sdf_split' / sdf_file_name))['ID']
                 df.rename(columns={'SCORCH_pose_score': 'SCORCH'}, inplace=True)
-                dfs.append(df)
+                dfs.append(df.drop('Pose_Number', axis=1))
 
         if 'hyde' == rescore_program:
             for sdf in (rescoring_results_path / rescore_program).glob('*.sdf'):

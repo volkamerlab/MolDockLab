@@ -10,16 +10,14 @@ from pathlib import Path
 from typing import Union
 from tqdm.auto import tqdm
 from rdkit.Chem import AllChem, PandasTools
+from plip.structure.preparation import PDBComplex
 
-from software.plipify.plipify.core import Structure
-from software.plipify.plipify.fingerprints import InteractionFingerprint
-from software.plipify.plipify.visualization import fingerprint_barplot
+from src.utilities import run_command
+
 
 def plipify_fp_interaction(
         ligands_path:Path,
         protein_path:Path,
-        protein_name: str,
-        chains: list,
         output_file:Path
         ) -> dict:
     '''
@@ -29,7 +27,6 @@ def plipify_fp_interaction(
     Args:
         ligands_path: single ligand path or multiple ligand paths in a list
         protein_path: path to protein in pdb format
-        protein_name: name of protein
         chains: list of chains to split
         output_file: single or multiple PLIPify visualization, if single give a single sdf structure as a path, 
                 if multiple give a list of sdf paths
@@ -40,49 +37,32 @@ def plipify_fp_interaction(
         ligand_pdb_paths = [_sdf2pdb_preprocessing(ligands_path)]
     elif len(ligands_path) > 1:
         ligand_pdb_paths = [_sdf2pdb_preprocessing(sdf) for sdf in ligands_path]
-        ligand_protein_cpx_paths = [
-            ligand_protein_complex(ligand_pdb, protein_path, protein_name, chains)[0]
-            for ligand_pdb in ligand_pdb_paths
-        ]
-        fp_focused = interaction_fp_generator(ligand_protein_cpx_paths, output_file)
-        shutil.rmtree((ligand_protein_cpx_paths[0].parent).parent)
-        return fp_focused
-    else:
-        raise ValueError("No sdf files found")
-    mol_interx_fp = {}
-    for ligand_pdb in ligand_pdb_paths:
-        interaction_fp = []
-        ligand_protein_cpx_chains = ligand_protein_complex(
-            ligand_pdb, protein_path, protein_name, chains)
-        for cpx in ligand_protein_cpx_chains:
-            try:
-                prepared_cpx = [Structure.from_pdbfile(str(cpx), ligand_name="HIT")]
-                fp = InteractionFingerprint().calculate_fingerprint(
-                    prepared_cpx,
-                    labeled=True,
-                    as_dataframe=True,
-                    remove_non_interacting_residues=True,
-                    remove_empty_interaction_types=True,
-                    ensure_same_sequence=False,
-                )
-            except BaseException as e:
-                print(f"Empty fingerprint for {cpx.stem}, {e}")
-                continue
-            if fp is None:
-                print(f"Empty fingerprint for {cpx.stem}")
-                continue
-            chain = cpx.stem.split("_")[-1]
-            fp = [f'{i}{chain}' for i in fp.index]
-            interaction_fp.extend(fp)
-            # for pdb in ligand_protein_cpx_chains:
-
-            os.remove(str(cpx))
-            os.remove(f'/tmp/{cpx.stem}_protonated.pdb')
-            # os.remove(str(cpx))
-        mol_interx_fp[ligand_pdb.stem] = interaction_fp
-    # print(type(ligands_path), ligands_path)
-    os.remove(str(ligands_path))
+    ligand_protein_cpx_paths = [
+        ligand_protein_complex(ligand_pdb, protein_path)[0]
+        for ligand_pdb in ligand_pdb_paths
+    ]
+    mol_interx_fp = interaction_fp_generator(ligand_protein_cpx_paths, output_file)
+    # os.remove(str(cpx))
+    # os.remove(f'/tmp/{cpx.stem}_protonated.pdb')    
     return mol_interx_fp
+    # else:
+    #     raise ValueError("No sdf files found")
+    # mol_interx_fp = {}
+    # for ligand_pdb in ligand_pdb_paths:
+    #     interaction_fp = []
+    #     ligand_protein_cpx_chains = ligand_protein_complex(
+    #         ligand_pdb, protein_path)
+    #     for cpx in ligand_protein_cpx_chains:
+    #         fp_focused = interaction_fp_generator(ligand_protein_cpx_paths, output_file)
+    #         fp = [f'{i}{chain}' for i in fp.index]
+    #         interaction_fp.extend(fp)
+    #         os.remove(str(cpx))
+    #         os.remove(f'/tmp/{cpx.stem}_protonated.pdb')
+    #         # os.remove(str(cpx))
+    #     mol_interx_fp[ligand_pdb.stem] = interaction_fp
+    # # print(type(ligands_path), ligands_path)
+    # os.remove(str(ligands_path))
+    # return mol_interx_fp
 
 
 def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFrame:
@@ -95,27 +75,58 @@ def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFram
     Returns:
         fp_focused: DataFrame of the interactions
     """
+    interactions_dict = {}
+    for cpx in tqdm(complex_path):
+        interactions_dict[cpx.stem] = {}
+        my_mol = PDBComplex()
+        my_mol.load_pdb(str(cpx))
+        small_ligands = str(my_mol).split()
+        my_bsid = [bsid for bsid in small_ligands if bsid.startswith('HIT')]
+        my_mol.analyze()
+        my_interactions = my_mol.interaction_sets[my_bsid[0]]
+        # print(my_interactions.all_itypes)
+        for interx in my_interactions.all_itypes:
+            interx_type = interx.__class__.__name__
+            resname = f"{interx.resnr}{interx.reschain}"
+            if resname not in interactions_dict[cpx.stem]:
+                interactions_dict[cpx.stem][resname] = []
+            interactions_dict[cpx.stem][resname].append(interx_type)
 
-    structures = [Structure.from_pdbfile(str(pdb),ligand_name="HIT") for pdb in tqdm(complex_path)]
+    mol_interx_fp = pd.DataFrame(interactions_dict).T.fillna(0)
+    return mol_interx_fp
 
-    fp = InteractionFingerprint().calculate_fingerprint(
-        structures,
-        labeled=True,
-        as_dataframe=True,
-        remove_non_interacting_residues=True,
-        remove_empty_interaction_types=True,
-        ensure_same_sequence=False,
-    )
+# def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFrame:
+#     """
+#     This function takes a path of complex pdb files and create a fingerprint 
+#     of the interactions
+#     Args:
+#         complex_path: path of the complex pdb files
+#         output_path: path of the output png file
+#     Returns:
+#         fp_focused: DataFrame of the interactions
+#     """
 
-    if not fp.values.shape[0]:
-        raise ValueError("Fingerprint is empty!")
+    
+#     structures = [Structure.from_pdbfile(str(pdb),ligand_name="HIT") for pdb in tqdm(complex_path)]
 
-    fp_focused = fp[fp.sum(axis=1) > len(complex_path) // 10]
+#     fp = InteractionFingerprint().calculate_fingerprint(
+#         structures,
+#         labeled=True,
+#         as_dataframe=True,
+#         remove_non_interacting_residues=True,
+#         remove_empty_interaction_types=True,
+#         ensure_same_sequence=False,
+#     )
 
-    fig = (fingerprint_barplot(fp_focused))
-    fig.write_image(output_path)
+#     if not fp.values.shape[0]:
+#         raise ValueError("Fingerprint is empty!")
 
-    return fp_focused
+#     fp_focused = fp[fp.sum(axis=1) > len(complex_path) // 10]
+
+#     fig = (fingerprint_barplot(fp_focused))
+#     fig.write_image(output_path)
+
+#     return fp_focused
 
 def split_sdf_path(sdf_path: Path) -> list:
     """
@@ -129,29 +140,19 @@ def split_sdf_path(sdf_path: Path) -> list:
         path of a directory contains splitted molecules of sdf file
     """
 
-    ligands_path = []
     output_dir = Path(sdf_path).parent / Path(sdf_path).stem
-    suppl = Chem.SDMolSupplier(str(sdf_path))
-
     output_dir.mkdir(exist_ok=True)
+    # Use Open Babel to split the SDF file
+    try:
+        # Run obabel command to split the SDF file
+        obabel_cmd = f"obabel {str(sdf_path)} -O {str(output_dir / 'ligand_.sdf')} -m"
+        run_command(obabel_cmd)
+    except Exception as e:
+        print(f"Error splitting SDF file using Open Babel: {e.stderr.decode()}")
+        return []
 
-    if os.listdir(output_dir):
-
-        if len(os.listdir(output_dir)) == len(suppl):
-            print("SDF files are already splitted")
-            return list(output_dir.glob(f"*.sdf"))
-
-    skipped = 0
-    for mol in tqdm(suppl, desc="SDF splitting"):
-        if mol is None:
-            skipped += 1
-            continue
-
-        sdf_path = output_dir / f"{mol.GetProp('_Name')}.sdf"
-        writer = Chem.SDWriter(str(sdf_path))
-        writer.write(mol)
-        writer.close()
-        ligands_path.append(sdf_path)
+    # Get the list of generated SDF files
+    ligands_path = list(output_dir.glob("ligand_*.sdf"))
     return ligands_path
 
 
@@ -178,16 +179,12 @@ def _sdf2pdb_preprocessing(sdf_file:Path) -> Path:
 def ligand_protein_complex(
         ligand_path:Path, 
         protein_path:Path, 
-        protein_name: str, 
-        chains: list
         ) -> list:
     """
     This function takes a path of ligand and protein and save them as a complex pdb file
     Args:
         ligand_path: path of ligand in pdb format
         protein_path: path of protein in pdb format
-        protein_name: name of protein
-        chains: list of chains to split
     Returns:
         list of paths of the complex pdb files
     """
@@ -196,39 +193,33 @@ def ligand_protein_complex(
 
     ligand_protein_cpx_chains = []
     ligand_protein_dir.mkdir(exist_ok=True)
-    for i, chain_id in enumerate(chains):
-        complex_name = f"{ligand_name}_{protein_name}_{chain_id}.pdb"
-        pdb_output = ligand_protein_dir / complex_name
+    complex_name = f"{ligand_name}_complex.pdb"
+    pdb_output = ligand_protein_dir / complex_name
 
-        if os.path.exists(pdb_output):
-            ligand_protein_cpx_chains.append(pdb_output)
-            continue
-
-        if i == 0:
-            cmd.load(protein_path)
-            cmd.load(ligand_path, "LIG")
-            cmd.alter("all", "q=1.0")
-
-        cmd.select(f'chain_{chain_id}E', f'chain {chain_id}+E')
-        cmd.save(pdb_output, f'chain_{chain_id}E')
-
-        # open pdb file and remove line starts with TER and write it at after
-        # line starts with HETATM.
-        with open(pdb_output, "r") as f:
-            lines = f.readlines()
-            new_lines = []
-            for line in lines:
-                if line.startswith("CONECT"):
-                    new_lines.append(f"TER \nEND\n")
-                    break
-                if line.startswith("TER"):
-                    continue
-                else:
-                    new_lines.append(line)
-            with open(pdb_output, "w") as f:
-                for line in new_lines:
-                    f.write(line)
+    if os.path.exists(pdb_output):
         ligand_protein_cpx_chains.append(pdb_output)
+        return ligand_protein_cpx_chains
+
+    cmd.load(protein_path)
+    cmd.load(ligand_path, "LIG")
+    cmd.alter("all", "q=1.0")
+    cmd.save(pdb_output)
+
+    with open(pdb_output, "r") as f:
+        lines = f.readlines()
+        new_lines = []
+        for line in lines:
+            if line.startswith("CONECT"):
+                new_lines.append(f"TER \nEND\n")
+                break
+            if line.startswith("TER"):
+                continue
+            else:
+                new_lines.append(line)
+        with open(pdb_output, "w") as f:
+            for line in new_lines:
+                f.write(line)
+    ligand_protein_cpx_chains.append(pdb_output)
     os.remove(ligand_path)
     cmd.delete("all")
     return ligand_protein_cpx_chains
@@ -259,52 +250,50 @@ def read_interactions_json(json_file:Path, output_file:Path) -> pd.DataFrame:
     return interactions_df
 
 
-def indiviudal_interaction_fp_generator(
-        sdfs_path: list[Path],
-        protein_file: Path,
-        protein_name: str,
-        included_chains: list,
-        output_dir: Path
-        ) -> dict:
-    """
-    This function takes a list of sdf files and generate a fingerprint of the interactions
-    Args:
-        sdfs_path: list of sdf files
-        protein_file: path of the protein in pdb format
-        protein_name: name of the protein
-        included_chains: list of chains to split
-        output_dir: path of the output directory
-    Returns:
-        allposes_interaction_fp: Dict of all interactions
-    """
-    if output_dir.is_dir():
-        print('Interactions for all poses are already executed')
-        return output_dir
+# def indiviudal_interaction_fp_generator(
+#         sdfs_path: list[Path],
+#         protein_file: Path,
+#         included_chains: list,
+#         output_dir: Path
+#         ) -> dict:
+#     """
+#     This function takes a list of sdf files and generate a fingerprint of the interactions
+#     Args:
+#         sdfs_path: list of sdf files
+#         protein_file: path of the protein in pdb format
+#         included_chains: list of chains to split
+#         output_dir: path of the output directory
+#     Returns:
+#         allposes_interaction_fp: Dict of all interactions
+#     """
+#     if output_dir.is_dir():
+#         print('Interactions for all poses are already executed')
+#         return output_dir
 
-    allposes_interaction_fp = {}
-    found_interx_fp = []
+#     allposes_interaction_fp = {}
+#     found_interx_fp = []
 
-    if output_dir.is_file():
-        found_interx_fp = json.load(output_dir)
-        found_interx_fp = {k: set(v) for k, v in allposes_interaction_fp.items()}
-    if (output_dir.parent / 'allposes_interaction_fps_final.csv').is_file():
-        found_interx_fp = pd.read_csv(output_dir.parent / 'allposes_interaction_fps_final.csv')['Poses'].tolist()
+#     if output_dir.is_file():
+#         found_interx_fp = json.load(output_dir)
+#         found_interx_fp = {k: set(v) for k, v in allposes_interaction_fp.items()}
+#     if (output_dir.parent / 'allposes_interaction_fps_final.csv').is_file():
+#         found_interx_fp = pd.read_csv(output_dir.parent / 'allposes_interaction_fps_final.csv')['Poses'].tolist()
     
-    for i, sdf in enumerate(sdfs_path):
-        if sdf.stem in found_interx_fp:
-            print(f"Interactions for {sdf.stem} are already calculated.")
-            continue
+#     for i, sdf in enumerate(sdfs_path):
+#         if sdf.stem in found_interx_fp:
+#             print(f"Interactions for {sdf.stem} are already calculated.")
+#             continue
             
-        fp = plipify_fp_interaction(
-            sdf, protein_file, protein_name, included_chains, output_dir)
-        allposes_interaction_fp.update(fp)
-        if i % 1000 == 0 and i != 0:
-            _write_json(allposes_interaction_fp, str(output_dir))
-            print(f"Interaction for poses between {i-1000} and {i} and total of {i} poses are saved in JSON file to {output_dir}.")
+#         fp = plipify_fp_interaction(
+#             sdf, protein_file, included_chains, output_dir)
+#         allposes_interaction_fp.update(fp)
+#         if i % 1000 == 0 and i != 0:
+#             _write_json(allposes_interaction_fp, str(output_dir))
+#             print(f"Interaction for poses between {i-1000} and {i} and total of {i} poses are saved in JSON file to {output_dir}.")
 
-    _write_json(allposes_interaction_fp, str(output_dir))
-    shutil.rmtree(sdfs_path[0].parent)
-    return allposes_interaction_fp
+#     _write_json(allposes_interaction_fp, str(output_dir))
+#     shutil.rmtree(sdfs_path[0].parent)
+#     return allposes_interaction_fp
 
 
 def _write_json(allposes_interaction_fp: pd.DataFrame, output_path: str):

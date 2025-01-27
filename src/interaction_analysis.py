@@ -4,6 +4,8 @@ import shutil
 import matplotlib.pyplot as plt
 import pandas as pd
 
+
+from collections import Counter
 from pymol import cmd
 from rdkit import Chem
 from pathlib import Path
@@ -37,14 +39,14 @@ def plipify_fp_interaction(
         ligand_pdb_paths = [_sdf2pdb_preprocessing(ligands_path)]
     elif len(ligands_path) > 1:
         ligand_pdb_paths = [_sdf2pdb_preprocessing(sdf) for sdf in ligands_path]
+        
     ligand_protein_cpx_paths = [
         ligand_protein_complex(ligand_pdb, protein_path)[0]
         for ligand_pdb in ligand_pdb_paths
     ]
-    mol_interx_fp = interaction_fp_generator(ligand_protein_cpx_paths, output_file)
-    # os.remove(str(cpx))
-    # os.remove(f'/tmp/{cpx.stem}_protonated.pdb')    
-    return mol_interx_fp
+    mols_interx_fp = interaction_fp_generator(ligand_protein_cpx_paths, output_file)
+    mols_interx_fp.to_csv(output_file)
+    return mols_interx_fp
     # else:
     #     raise ValueError("No sdf files found")
     # mol_interx_fp = {}
@@ -91,9 +93,10 @@ def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFram
             if resname not in interactions_dict[cpx.stem]:
                 interactions_dict[cpx.stem][resname] = []
             interactions_dict[cpx.stem][resname].append(interx_type)
-
-    mol_interx_fp = pd.DataFrame(interactions_dict).T.fillna(0)
-    return mol_interx_fp
+        os.remove(str(cpx))
+        os.remove(f'/tmp/{cpx.stem}_protonated.pdb') 
+    mols_interx_fp = pd.DataFrame(interactions_dict).T.fillna(0)
+    return mols_interx_fp
 
 # def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFrame:
 #     """
@@ -296,41 +299,41 @@ def read_interactions_json(json_file:Path, output_file:Path) -> pd.DataFrame:
 #     return allposes_interaction_fp
 
 
-def _write_json(allposes_interaction_fp: pd.DataFrame, output_path: str):
-    """
-    This function writes the interactions to a JSON file
-    Args:
-        allposes_interaction_fp: DataFrame of the interactions
-        output_path: path of the output JSON file
-    """
-    residue_to_compounds = {}
-    for compound, residues in allposes_interaction_fp.items():
-        for residue in residues:
-            if residue not in residue_to_compounds:
-                residue_to_compounds[residue] = []
-            residue_to_compounds[residue].append(compound)
+# def _write_json(allposes_interaction_fp: pd.DataFrame, output_path: str):
+#     """
+#     This function writes the interactions to a JSON file
+#     Args:
+#         allposes_interaction_fp: DataFrame of the interactions
+#         output_path: path of the output JSON file
+#     """
+#     residue_to_compounds = {}
+#     for compound, residues in allposes_interaction_fp.items():
+#         for residue in residues:
+#             if residue not in residue_to_compounds:
+#                 residue_to_compounds[residue] = []
+#             residue_to_compounds[residue].append(compound)
 
-    with open(output_path, "w") as json_file:
-        json.dump(residue_to_compounds, json_file, indent=4)
+#     with open(output_path, "w") as json_file:
+#         json.dump(residue_to_compounds, json_file, indent=4)
 
-    print(f"JSON file saved to {output_path}")
+#     print(f"JSON file saved to {output_path}")
 
-def interactions_aggregation(
-        interactions_df: pd.DataFrame,
-        important_interactions: list,
-        ) -> pd.DataFrame:
-    """
-    This function aggregates the interactions based on the important interactions
-    Args:
-        interactions_df: DataFrame of the interactions
-        important_interactions: list of important interactions
-        id_column: column name of the ID
-    Returns:
-        aggregated_df: DataFrame of the aggregated interactions
-    """
-    interactions_df['id'] = interactions_df['Poses'].str.split('_').str[0]
-    aggregated_df = interactions_df.groupby('id').sum()
-    return aggregated_df[important_interactions].reset_index()
+# def interactions_aggregation(
+#         interactions_df: pd.DataFrame,
+#         important_interactions: list,
+#         ) -> pd.DataFrame:
+#     """
+#     This function aggregates the interactions based on the important interactions
+#     Args:
+#         interactions_df: DataFrame of the interactions
+#         important_interactions: list of important interactions
+#         id_column: column name of the ID
+#     Returns:
+#         aggregated_df: DataFrame of the aggregated interactions
+#     """
+#     interactions_df['id'] = interactions_df['Poses'].str.split('_').str[0]
+#     aggregated_df = interactions_df.groupby('id').sum()
+#     return aggregated_df[important_interactions].reset_index()
 
 def actives_extraction(
         test_set_docked_path : Path,
@@ -364,3 +367,21 @@ def actives_extraction(
         molColName='ROMol',
         idName='ID')
     return actives_path
+
+def aggregate_interactions(interactions):
+    melted_df = interactions.reset_index().melt(id_vars="index", var_name="residue", value_name="interactions")
+    melted_df = melted_df[melted_df["interactions"] != 0]
+
+    # def count_interactions(interactions):
+    #     return dict(Counter(interactions))
+
+    melted_df["interaction_counts"] = melted_df["interactions"].apply(lambda x: dict(Counter(x)))
+    melted_df.sort_values(by="residue", inplace=True)
+    melted_df = melted_df.explode("interactions")
+
+    result = (
+        melted_df.groupby(["residue", "interactions"]).size().reset_index(name="count")
+    )
+    # Sort the result for better readability
+    result = result.sort_values(by=["residue", "interactions"])
+    return result

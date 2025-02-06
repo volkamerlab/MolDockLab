@@ -7,6 +7,7 @@ import zipfile
 import pandas as pd
 
 from pathlib import Path
+from IPython import get_ipython
 
 from rdkit import Chem
 from Bio import SeqIO
@@ -25,6 +26,8 @@ def run_command(cmd: str):
         try:
             subprocess.call(cmd,
                             shell=True,
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.STDOUT
                             )
         except subprocess.CalledProcessError as e:
             print(e)

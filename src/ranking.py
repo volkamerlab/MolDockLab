@@ -46,8 +46,8 @@ def runtime_cost_calculation(
                 'rfscore_v3': 0.69,
                 'vina_hydrophobic': 0.69,
                 'vina_intra_hydrophobic': 0.69,
-                'KORP-PL': 0.2,
-                'ConvexPLR': 0.2
+                # 'KORP-PL': 0.2,
+                # 'ConvexPLR': 0.2
         }
         runtime_docking_tools = [runtime_per_tool[tool.lower()] for tool in docking_tools]
         runtime_scoring_tools = [runtime_per_tool[tool] for tool in scoring_functions]
@@ -116,28 +116,28 @@ def _process_combination(
                 'enrichment_factor': []
                 }
         ranking_methods_dict = {  
-                'best_ECR' : method1_ECR_best, 
-                'ECR_average' : method2_ECR_average, 
-                'average_ECR' : method3_avg_ECR,
-                'rank_by_rank' : method4_RbR,
-                'rank_by_vote' : method5_RbV,
-                'best_Zscore': method6_Zscore_best,
-                'average_Zscore': method7_Zscore_avg,
-                'rank_by_number': method8_RbN,
-                'weighted_ECR': method9_weighted_ECR_best
+                'best_ECR' : ECR_best, 
+                'rank_by_rank' : rank_by_rank,
+                'best_Zscore': Zscore_best,
+                'weighted_ECR_weights': weighted_ECR_best
                 }
         df = df_rescored.copy()
         df = df.drop('pose', axis=1)
-        ranking_method_name = ranking_methods_dict[ranking_method].__name__
+        try:
+                ranking_method_name = ranking_methods_dict[ranking_method].__name__
+        except KeyError:
+                ranking_method_name = ranking_method
         for i, comb in enumerate(splitted_comb):
                 filtered_df = df[df['docking_tool'].isin(list(comb[0]))]
                 try:    
-                        if ranking_method == 'weighted_ECR':
-                               df_rank = method9_weighted_ECR_best(
+                        if ranking_method.startswith('weighted_ECR'):
+                                dict_key = float(ranking_method_name.split('_')[-1])
+                                df_rank = weighted_ECR_best(
                                       filtered_df.copy(),
-                                      mapped_weights=weights,
+                                      mapped_weights=weights[dict_key],
                                       selected_scores=list(comb[1]), 
-                                      id_column='ID', 
+                                      id_column='ID',
+                                      ranking_method_name=ranking_method_name
                                       )
                         else:
                                 df_rank = ranking_methods_dict[ranking_method](
@@ -190,7 +190,6 @@ def _process_combination(
                 except (RuntimeError, TypeError, NameError, pd.errors.MergeError, KeyError) as err:
                         print("df_filter", filtered_df)
                         print(df_unique_sorted)   
-                        print("df)rank copy",df_rank_copy.head(1))
                         print(f"Error occurred in calculations: {err}")
 
                 corr_dict['docking_tool'].append(list(comb[0]))
@@ -210,7 +209,8 @@ def poses_ranking(
         df_rescored: pd.DataFrame,
         output_path: Path,
         validation: str ="general",
-        weights: dict =None
+        weights: dict =None,
+        ncpus: int = 4
         ):
         """
         Rank poses using different ranking methods
@@ -225,7 +225,6 @@ def poses_ranking(
                 Write the results of every ranking method to a big csv file and concatenate 
                 all the results to a big csv file
         """
-        ncpus = cpu_count()
         df_rescored = df_rescored.copy()
         df_rescored[['ID', 'docking_tool', 'pose']] = df_rescored['ID'].str.split('_', expand=True)
         df_rescored = df_rescored[df_rescored['docking_tool'].notna()]
@@ -244,10 +243,7 @@ def poses_ranking(
                 corr_file_path = output_path / f'correlations_{validation}'
 
         corr_file_path.mkdir(parents=True, exist_ok=True)
-
-        
         for ranking_method in (ranking_methods):
-
                 if os.path.exists(str(corr_file_path / 'all_ranked.csv')):
                         print(f'All poses are ranked with all consensus methods ..')
                         break

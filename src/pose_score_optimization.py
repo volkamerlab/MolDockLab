@@ -4,6 +4,7 @@ import random
 import numpy as np
 import pandas as pd
 import tqdm as tqdm
+import concurrent.futures
 
 from pathlib import Path
 from scipy.optimize import minimize
@@ -60,15 +61,11 @@ def scores_preprocessing(df: pd.DataFrame) -> tuple:
     df_copy[features] = df_copy[features].apply(pd.to_numeric, errors='coerce')
     scaler = StandardScaler()
     df_copy[features] = scaler.fit_transform(df_copy[features])
-    df_copy.fillna(df_copy.min(), inplace=True)
-    df_copy['pose'] = df_copy['ID'].apply(
-        lambda x: x.split('_')[2]).astype(int) - 1
+    df_copy.dropna(subset=features, inplace=True)
+    df_copy['pose'] = df_copy['ID'].apply(lambda x: x.split('_')[2]).astype(int) - 1
 
     docking_tools = list(df_copy['docking_tool'].unique())
-    scoring_tools = [
-        f for f in features if f not in [
-            'true_value',
-            'cpd_per_second']]
+    scoring_tools = [f for f in features if f not in ['true_value', 'cpd_per_second']]
     poses = list(df_copy['pose'].unique())
 
     docking_cost = np.zeros(len(docking_tools))
@@ -157,49 +154,62 @@ def loss(
     return model_loss + (reg * regularization)
 
 
+def _optimize_iteration(seed, X, y, docking_cost, scoring_cost, reg):
+    # Set the seed for reproducibility in this worker.
+    np.random.seed(seed)
+    # Compute the length of x0 from docking and scoring costs.
+    len_x0 = len(docking_cost) + len(scoring_cost)
+    x0 = np.random.rand(len_x0)
+    res = minimize(
+        loss,
+        x0,
+        args=(X, y, docking_cost, scoring_cost, reg),
+        method='Nelder-Mead'
+    )
+    return res.fun, res.x
 def optimize_score(
         X: torch.Tensor, 
-        y : torch.Tensor, 
-        docking_cost : np.array, 
-        scoring_cost : np.array, 
-        reg : float =0.3, 
-        iter : int =500
+        y: torch.Tensor, 
+        docking_cost: np.array, 
+        scoring_cost: np.array, 
+        reg: float = 0.3, 
+        iter: int = 500
         ) -> tuple:
     """
-    Optimize the weights for the scoring function
+    Optimize the weights for the scoring function.
+    
     Args:
-        X (torch.Tensor): torch.Tensor of shape (n_ligands, n_docking_tools, n_scoring_tools, n_poses)
-        y (torch.Tensor): torch.Tensor of shape (n_ligands)
-        docking_cost (np.array): np.array of shape (n_docking_tools)
-        scoring_cost (np.array): np.array of shape (n_scoring_tools)
-        reg (float): the regularization parameter
-        iter (int): number of iterations for the optimization
+        X (torch.Tensor): Tensor of shape (n_ligands, n_docking_tools, n_scoring_tools, n_poses)
+        y (torch.Tensor): Tensor of shape (n_ligands)
+        docking_cost (np.array): Array of shape (n_docking_tools)
+        scoring_cost (np.array): Array of shape (n_scoring_tools)
+        reg (float): Regularization parameter.
+        iter (int): Number of optimization iterations.
+    
     Returns:
-        losses (list): list of float, the loss for each iteration
-        weights (dict): list of np.array, the weights for each iteration
+        losses (list): List of floats, the loss for each iteration.
+        weights (list): List of np.array, the weights from each iteration.
     """
-
     losses = []
     weights = []
+
+    # Set a fixed seed for reproducibility and generate random seeds for each iteration.
     random.seed(0)
-    random_seeds = [random.randint(0, 1000000) for _ in range(500)]
-    len_x0 = len(docking_cost) + len(scoring_cost)
-    for i in tqdm.tqdm(range(iter)):
-        np.random.seed(random_seeds[i])
-        x0 = np.random.rand(len_x0)
-        res = minimize(
-            loss,
-            x0,
-            args=(
-                X,
-                y,
-                docking_cost,
-                scoring_cost,
-                reg
-                ),
-            method='Nelder-Mead')
-        losses.append(res.fun)
-        weights.append(res.x)
+    random_seeds = [random.randint(0, 1000000) for _ in range(iter)]
+    
+    # Option 1: Parallelize using ProcessPoolExecutor.
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        # Submit all jobs.
+        futures = [
+            executor.submit(_optimize_iteration, seed, X, y, docking_cost, scoring_cost, reg)
+            for seed in random_seeds
+        ]
+        # Use tqdm to display a progress bar over the completed futures.
+        for future in tqdm.tqdm(concurrent.futures.as_completed(futures), total=iter):
+            loss_val, weight_val = future.result()
+            losses.append(loss_val)
+            weights.append(weight_val)
+    
     return losses, weights
 
 

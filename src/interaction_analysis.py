@@ -150,12 +150,16 @@ def split_sdf_path(sdf_path: Path) -> list:
         # Run obabel command to split the SDF file
         obabel_cmd = f"obabel {str(sdf_path)} -O {str(output_dir / 'ligand_.sdf')} -m"
         run_command(obabel_cmd)
+        for lig_sdf in output_dir.glob("ligand_*.sdf"):
+            with open(lig_sdf, "r") as f:
+                mol_name = f.readline().strip()
+            lig_sdf.rename(output_dir / f"{mol_name}.sdf")
     except Exception as e:
         print(f"Error splitting SDF file using Open Babel: {e.stderr.decode()}")
         return []
 
     # Get the list of generated SDF files
-    ligands_path = list(output_dir.glob("ligand_*.sdf"))
+    ligands_path = list(output_dir.glob("*.sdf"))
     return ligands_path
 
 

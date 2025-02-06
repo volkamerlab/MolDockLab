@@ -131,8 +131,13 @@ else
 
     conda install rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt chembl_structure_pipeline tqdm plip ambertools -y
     
-    conda install conda-forge::pymol-open-source bioconda/label/cf201901::muscle -y
+    conda install conda-forge::pymol-open-source -y
 
+    conda install openbabel -c conda-forge -y
+    
+    conda install conda-forge::plip -y
+    export PYTHONPATH=~/plip:${PYTHONPATH}	
+    
     echo -e """
     ###############################################################
     # Installing Pip packages, please wait...
@@ -140,15 +145,15 @@ else
     """   
 
     
-    pip install pymesh oddt prody==2.4.1 redo MDAnalysis Pebble tensorflow==2.15 keras==2.15 meeko posebusters hdbscan e3nn pydantic plotly bravado black pybel 
+    pip install pymesh oddt redo tensorflow==2.15 keras==2.15 meeko posebusters hdbscan e3nn pydantic
 
     pip3 install torch==2.2.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu 
     
     pip install -U kaleido fair-esm[esmfold]==2.0.0
 
     pip install torch_scatter torch_sparse==0.6.17 torch_spline_conv torch_cluster==1.6.0 torch_geometric 
-
-	pip install dgl -f https://data.dgl.ai/wheels/torch-2.2/repo.html 
+    
+    pip install dgl -f https://data.dgl.ai/wheels/torch-2.2/repo.html 
     echo -e """
     ###############################################################
     # Finished installing pip packages
@@ -200,7 +205,6 @@ if [[ ! -f $MolDockLab_FOLDER/software/smina.static ]]; then
     chmod +x smina.static
 fi
 
-
 if [[ ! -d $MolDockLab_FOLDER/software/gypsum_dl-1.2.1 ]]; then
     echo -e "\nDownloading GypsumDL!"
     cd $MolDockLab_FOLDER/software
@@ -214,13 +218,6 @@ if [[ ! -d $MolDockLab_FOLDER/software/SCORCH ]]; then
     echo -e "\nCloning SCORCH!"
     cd $MolDockLab_FOLDER/software
     git clone git@github.com:SMVDGroup/SCORCH.git
-    cd $MolDockLab_FOLDER  # Return to the original directory
-fi
-
-if [[ ! -d $MolDockLab_FOLDER/software/PLIPify ]]; then
-    echo -e "\nCloning PLIPify!"
-    cd $MolDockLab_FOLDER/software
-    git clone git@github.com:hamzaibrahim21/plipify.git
     cd $MolDockLab_FOLDER  # Return to the original directory
 fi
 

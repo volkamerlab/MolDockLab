@@ -14,9 +14,10 @@ from rdkit.Chem.rdFingerprintGenerator import GetMorganGenerator
 from src.utilities import handling_multicollinearity, run_command
 
 
-def  merge_activity_values(
+def   merge_activity_values(
     norm_scored_path : Path,
     mols_true_value_path : Path,
+    true_value_idcol : str,
     true_value_col : str,
     scored_id_col : str,
     activity_col : str = "activity_class",
@@ -47,32 +48,23 @@ def  merge_activity_values(
             df_rescored[col] = pd.to_numeric(df_rescored[col])
         except:
             continue
-    df_rescored[['id', 'docking_tool', 'pose']
-                ] = df_rescored[scored_id_col].str.split('_', expand=True)
-    true_values_df = PandasTools.LoadSDF(str(mols_true_value_path))
-
-    for _, group in df_rescored.groupby(['id']):
-        group.loc[:, true_value_col] = true_values_df[true_values_df['ID']
-                                                      == group['id'].iloc[0]][true_value_col].values[0]
-        group.loc[:, activity_col] = true_values_df[true_values_df['ID']
-                                                    == group['id'].iloc[0]][activity_col].values[0]
-
-        df_rescored.loc[group.index, true_value_col] = group[true_value_col].values[0]
-        df_rescored.loc[group.index, activity_col] = group[activity_col].values[0]
+    
+    df_rescored[['id', 'docking_tool', 'pose']] = df_rescored[scored_id_col].str.split('_', expand=True)
+    true_values_df = PandasTools.LoadSDF(str(mols_true_value_path)).rename(columns={true_value_idcol: 'id'})    
+    df_merged = df_rescored.merge(true_values_df[['id', true_value_col, activity_col]], on='id', how='left')
     if lower_better_true_value:
-        df_rescored.loc[:,true_value_col] = df_rescored.loc[:,true_value_col] * -1
-    df_rescored.drop(['pose'], axis=1, inplace=True)
-    df_rescored.rename(columns={true_value_col: 'true_value'}, inplace=True)
+        df_merged.loc[:,true_value_col] = df_merged.loc[:,true_value_col] * -1
+    df_merged.drop(['pose'], axis=1, inplace=True)
+    df_merged.rename(columns={true_value_col: 'true_value'}, inplace=True)
 
     collinear_sfs = handling_multicollinearity(
-        df_rescored.drop([activity_col], axis=1),
+        df_merged.drop([activity_col], axis=1),
         threshold=threshold,
         true_value_col='true_value'
     )
-    df_rescored.drop(collinear_sfs, axis=1, inplace=True)
-    df_rescored.to_csv(str(norm_scored_path.parent / 'all_rescoring_results_merged.csv'), index=False)
-    return df_rescored
-
+    df_merged.drop(collinear_sfs, axis=1, inplace=True)
+    df_merged.to_csv(str(norm_scored_path.parent / 'all_rescoring_results_merged.csv'), index=False)
+    return df_merged
 
 def _get_scaffold(mol : Chem.Mol) ->Chem.rdchem.Mol:
     """
@@ -131,7 +123,6 @@ def hdbscan_scaffold_split(original_data_path : Path, min_cluster_size : int) ->
 
     print(f'Number of unique scaffolds: {len(unique_scaffolds)}')
     df['scaffold_fp'] = df.scaffold.apply(get_fp)
-    display(df.head())
     cluster_labels = _get_cluster_labels(
         list(df['scaffold_fp']), min_cluster_size)
     print(f'Number of HDBSCAN clusters: {len(set(cluster_labels))}')

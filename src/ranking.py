@@ -92,7 +92,7 @@ def _process_combination(
                 ranking_method: str,
                 output_path: Path,
                 index: int,
-                weights: dict
+                mapped_weights: dict
         ):
         """
         Rank poses using different ranking methods
@@ -104,7 +104,7 @@ def _process_combination(
                 ranking_method(str): ranking method
                 output_path(pathlib.Path): path to output folder
                 index(int): index of the splitted_comb
-                weights(dict): weights for weighted ECR ranking method
+                mapped_weights(dict): dict of different alphas of weights for weighted ECR ranking method
         Return: 
                 Write the results of every ranking method to a csv file
         """
@@ -116,10 +116,9 @@ def _process_combination(
                 'enrichment_factor': []
                 }
         ranking_methods_dict = {  
-                'best_ECR' : ECR_best, 
+                'ecr' : exponential_consensus_ranking, 
                 'rank_by_rank' : rank_by_rank,
-                'best_Zscore': Zscore_best,
-                'weighted_ECR_weights': weighted_ECR_best
+                'zscore': Zscore,
                 }
         df = df_rescored.copy()
         df = df.drop('pose', axis=1)
@@ -130,15 +129,14 @@ def _process_combination(
         for i, comb in enumerate(splitted_comb):
                 filtered_df = df[df['docking_tool'].isin(list(comb[0]))]
                 try:    
-                        if ranking_method.startswith('weighted_ECR'):
-                                dict_key = float(ranking_method_name.split('_')[-1])
-                                df_rank = weighted_ECR_best(
-                                      filtered_df.copy(),
-                                      mapped_weights=weights[dict_key],
-                                      selected_scores=list(comb[1]), 
-                                      id_column='ID',
-                                      ranking_method_name=ranking_method_name
-                                      )
+                        if ranking_method.startswith('weighted_ecr'):
+                                df_rank = weighted_ECR(
+                                df=filtered_df.copy(),
+                                mapped_weights=mapped_weights[float(ranking_method_name.split('_')[-1])],
+                                selected_scores=list(comb[1]), 
+                                id_column='ID',
+                                ranking_method_name=ranking_method_name
+                                )
                         else:
                                 df_rank = ranking_methods_dict[ranking_method](
                                         filtered_df.copy(), 
@@ -147,7 +145,7 @@ def _process_combination(
                                         id_column='ID'
                                         )
                 except(RuntimeError, TypeError, NameError, pd.errors.MergeError, KeyError) as err:
-                        print(f"Error occurred: {err}")
+                        print(f"Error in ranking the scores: {err}")
                 try:
                         df_rank_copy = df_rank.copy()
                         for column in df_rank_copy.columns:
@@ -168,30 +166,31 @@ def _process_combination(
                         subset=['id']
                         )
                 except (RuntimeError, TypeError, NameError, pd.errors.MergeError, KeyError) as err:
-                        print(f"Error occurred: {err}")
+                        print(df_rank_copy)
+                        print(f"Error occurred after ranking while sorting compounds: {err}")
 
                 try:
                         spearman_corr, _ = spearmanr(
-                                df_rank_copy.loc[:, ranking_method_name], 
-                                df_rank_copy['true_value']
-                                )
-                        
+                                        df_rank_copy.loc[:, ranking_method_name], 
+                                        df_rank_copy['true_value']
+                                        )
+
                         ef = enrichment_factor_calc(
                                 df_unique_sorted, 
                                 percent=10, 
-                                activity_class='activity_class')
-                        
+                                activity_class='activity_class'
+                                )
+
                         cost = runtime_cost_calculation(
                                 docking_tools=list(comb[0]), 
                                 scoring_functions=list(comb[1]), 
                                 num_poses=10
                                 )
-
                 except (RuntimeError, TypeError, NameError, pd.errors.MergeError, KeyError) as err:
-                        print("df_filter", filtered_df)
-                        print(df_unique_sorted)   
-                        print(f"Error occurred in calculations: {err}")
-
+                        # print("df_filter", filtered_df.head())
+                        print(df_unique_sorted.head())   
+                        print(f"Error occurred in metrics calculation: {err}")
+        
                 corr_dict['docking_tool'].append(list(comb[0]))
                 corr_dict['scoring_function'].append(list(comb[1]))
                 corr_dict['spearman_correlation'].append(spearman_corr)
@@ -209,7 +208,7 @@ def poses_ranking(
         df_rescored: pd.DataFrame,
         output_path: Path,
         validation: str ="general",
-        weights: dict =None,
+        mapped_weights: dict =None,
         ncpus: int = 4
         ):
         """
@@ -241,9 +240,13 @@ def poses_ranking(
         corr_file_path = output_path / f'correlations'
         if validation:
                 corr_file_path = output_path / f'correlations_{validation}'
+        # put if condition if the dict is not empty
+        if 'weighted_ecr' in ranking_methods:
+                ranking_methods.remove('weighted_ecr')
+                ranking_methods.extend([f'weighted_ecr_{alpha}' for alpha in mapped_weights.keys()])
 
         corr_file_path.mkdir(parents=True, exist_ok=True)
-        for ranking_method in (ranking_methods):
+        for ranking_method in ranking_methods:
                 if os.path.exists(str(corr_file_path / 'all_ranked.csv')):
                         print(f'All poses are ranked with all consensus methods ..')
                         break
@@ -257,7 +260,7 @@ def poses_ranking(
                 with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
                         futures = [
                         executor.submit(
-                                _process_combination, comb, df_rescored, ranking_method, corr_file_path, i, weights
+                                _process_combination, comb, df_rescored, ranking_method, corr_file_path, i, mapped_weights
                         ) for i, comb in enumerate(splitted_comb)
                         ]
                 #concatenate all the results

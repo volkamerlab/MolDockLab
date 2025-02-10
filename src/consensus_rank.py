@@ -9,7 +9,7 @@ Platform for Consensus Virtual Screening in Drug Design.
 ChemRxiv. 2024; doi:10.26434/chemrxiv-2024-17k46.
 '''''
 
-def ECR_best(
+def exponential_consensus_ranking(
         df: pd.DataFrame, 
         weight: float, 
         selected_scores: list, 
@@ -30,12 +30,12 @@ def ECR_best(
     for col in selected_scores:
         df.loc[:, col] = df.loc[:, col].rank(method='min', ascending=False)
         df.loc[:, col] = (np.exp(-(df.loc[:, col] / sigma)) / sigma)    
-    df[f'method1_ECR_best'] = df[selected_scores].sum(axis=1, numeric_only=True)
+    df[f'exponential_consensus_ranking'] = df[selected_scores].sum(axis=1, numeric_only=True)
     df2 = df.sort_values(
-        f'method1_ECR_best',
+        f'exponential_consensus_ranking',
         ascending=False).drop_duplicates(
         [id_column])
-    return df2[[id_column, f'method1_ECR_best']]
+    return df2[[id_column, f'exponential_consensus_ranking']]
 
 
 # def method2_ECR_average(
@@ -101,7 +101,7 @@ def rank_by_rank(
         id_column: str
         ) -> pd.DataFrame:
     """
-    A method that calculates the Rank by Rank consensus score.
+    A method that calculates the Rank by Rank consensus score. The higher the score the better the pose.
 
     Args:
         df (DataFrame): The dataframe containing the rescored poses
@@ -109,15 +109,21 @@ def rank_by_rank(
         selected_scores (list): The list of columns to be used for calculating the Rank by Rank
         id_column (str): The column containing the ID of the poses
     Returns:
-        DataFrame: The dataframe containing the ID and the best ECR score for each pose
+        DataFrame: The dataframe containing the ID and the best rank-by-rank score for each pose
     """
-    df = df.groupby(id_column, as_index=False).mean(numeric_only=True).round(2)
+    
+
 
     for col in selected_scores:
         df.loc[:, col] = df.loc[:, col].rank(method='min', ascending=True)
-
-    df.loc[:, 'method4_RbR'] = df.loc[:, selected_scores].mean(axis=1)
-    return df[[id_column, f'method4_RbR']]
+    # df['best_pose'] = df[selected_scores].idxmax(axis=1)
+    # df = df.groupby(id_column, as_index=False).mean(numeric_only=True).round(5)
+    df.loc[:, 'rank_by_rank'] = df.loc[:, selected_scores].mean(axis=1)
+    df = df.sort_values(
+        'rank_by_rank',
+        ascending=False).drop_duplicates(
+        [id_column])
+    return df[[id_column, f'rank_by_rank']]
 
 
 # def method5_RbV(
@@ -151,7 +157,7 @@ def rank_by_rank(
 #     return df[[id_column, f'method5_RbV']]
 
 
-def Zscore_best(
+def Zscore(
         df: pd.DataFrame, 
         weight: float, 
         selected_scores: list, 
@@ -166,20 +172,20 @@ def Zscore_best(
         selected_scores (list): The list of columns to be used for calculating the Z-score best
         id_column (str): The column containing the ID of the poses
     Returns:
-        DataFrame: The dataframe containing the ID and the best ECR score for each pose
+        DataFrame: The dataframe containing the ID and the Z scores for each pose
     """
     df[selected_scores] = df[selected_scores].apply(
         pd.to_numeric, errors='coerce')
     z_scores = (df[selected_scores] - df[selected_scores].mean()
                 ) / df[selected_scores].std()
-    df[f'method6_Zscore_best'] = z_scores.mean(axis=1)
+    df[f'Zscore'] = z_scores.mean(axis=1)
     # Aggregate rows using best Z-score per ID
     df = df.sort_values(
-        f'method6_Zscore_best',
+        f'Zscore',
         ascending=False).drop_duplicates(
         [id_column])
     # df.set_index(id_column)
-    return df[[id_column, f'method6_Zscore_best']]
+    return df[[id_column, f'Zscore']]
 
 
 # def method7_Zscore_avg(
@@ -230,7 +236,7 @@ def Zscore_best(
 #     return df[[id_column, f'method8_RbN']]
 
 
-# def method9_weighted_ECR_best(
+# def method9_weighted_ECR(
 #         df: pd.DataFrame, 
 #         mapped_weights:dict, 
 #         selected_scores: list, 
@@ -259,18 +265,18 @@ def Zscore_best(
 #                 continue
 #             df.loc[:, col] = df.loc[:, col].rank(method='min', ascending=False)
 #             df.loc[:, col] = (np.exp(-(df.loc[:, col] / sigma)) / sigma)
-#         df[f'method9_weighted_ECR_best'] = df[selected_scores].sum(axis=1, numeric_only=True)
+#         df[f'method9_weighted_ECR'] = df[selected_scores].sum(axis=1, numeric_only=True)
 #     except KeyError:
 #         print('The weights are not mapped for the selected columns')
 #         return None
 #     df2 = df.sort_values(
-#         f'method9_weighted_ECR_best',
+#         f'method9_weighted_ECR',
 #         ascending=False).drop_duplicates(
 #         [id_column])
 
-#     return df2[[id_column, f'method9_weighted_ECR_best', 'docking_tool']]
+#     return df2[[id_column, f'method9_weighted_ECR', 'docking_tool']]
 
-def weighted_ECR_best(
+def weighted_ECR(
         df: pd.DataFrame, 
         mapped_weights:dict, 
         selected_scores: list, 
@@ -286,7 +292,7 @@ def weighted_ECR_best(
         id_column (str): The column containing the ID of the poses
         mapped_weights (dict): The dictionary containing the weights for each column
     Returns:
-        DataFrame: The dataframe containing the ID and the best ECR score for each pose
+        DataFrame: The dataframe containing the ID and the best weighted ECR score for each pose
     """
     if 'docking_tool' not in df.columns:
         df['docking_tool'] = df[id_column].str.split('_').str[1]
@@ -307,9 +313,5 @@ def weighted_ECR_best(
     except KeyError:
         print('The weights are not mapped for the selected columns')
         return None
-    df2 = df.sort_values(
-        ranking_method_name,
-        ascending=False).drop_duplicates(
-       [id_column])
-
+    df2 = df.sort_values(ranking_method_name,ascending=False).drop_duplicates([id_column])
     return df2[[id_column, ranking_method_name]]

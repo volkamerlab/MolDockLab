@@ -46,7 +46,7 @@ Thanks to the [DockM8](https://github.com/DrugBud-Suite/DockM8/blob/main/), the 
 To execute the workflow, run the `moldocklab.py` script with your desired parameters. Make sure your input data is ready. You can also use the provided test data in `test_data/` for smaller-scale testing. For reproducibility, the following command can be used with the test data:
 
 ```
-python moldocklab.py --protein_path test_data/5UG9_noligand_protoss.pdb --ref_ligand_path test_data/ref_ligand.pdb --known_ligands_path test_data/test_three_cpds.sdf --sbvs_ligands_path test_data/test_library_10_cpds.sdf --out_dir test_output --true_value_col true_value --docking_programs gnina smina diffdock plants --pose_quality_checker 
+python moldocklab.py --protein_path test_data/5UG9_noligand_protoss.pdb --ref_ligand_path test_data/ref_ligand.pdb --known_ligands_path test_data/test_three_cpds.sdf --sbvs_ligands_path test_data/test_library_10_cpds.sdf --out_dir test_output --true_value_col true_value --docking_programs gnina smina diffdock plants --pose_quality_checker --runtime_reg 0 5 40
 ```
 For step-by-step tutorial, the steps in `test_run.ipynb` can be followed.
 
@@ -61,13 +61,13 @@ Required args:
 --protein_path            Path to the protein file.
 --ref_ligand_path         Path to the reference ligand file.
 --known_ligands_path      Path to the experimentally validated ligands library.
---sbvs_ligands_path       Path to the le ligand library for SBVS.
 --true_value_col          Column name of the true activity values in the 
                           experimentally validated ligands library.
 
 
 Optional args:
 
+--sbvs_ligands_path       Path to the ligand library for larger SBVS.
 --activity_col            Column name for the activity class (default: "activity_class").
 --id_col                  Column name for the ligand ID (default: "ID").
 --protein_name            Protein name for documentation (optional).
@@ -122,8 +122,6 @@ Pipeline Selection:
 
 Interaction Analysis:
 
---interacting_chains      [INTERACTING_CHAINS ...]
-                          Chains to include in protein-ligand interactions (default: X).
 --key_residues            [KEY_RESIDUES ...]
                           Key residues for interaction filtration can be given manually 
                           (e.g., "123A 124B"). 

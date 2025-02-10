@@ -34,9 +34,7 @@ from src.interaction_analysis import (
     split_sdf_path, 
     actives_extraction, 
     plipify_fp_interaction, 
-    indiviudal_interaction_fp_generator, 
-    read_interactions_json, 
-    interactions_aggregation
+    aggregate_interactions, 
     )
 
 ALLOWED_DOCKING_PROGRAMS = ['gnina', 'smina', 'diffdock', 'plants', 'flexx']
@@ -57,15 +55,12 @@ ALLOWED_SCORING_FUNCTIONS = ['cnnscore',
                        'vina_hydrophobic', 
                        'vina_intra_hydrophobic']
 
-ALLOWED_RANKING_METHODS = ['best_ECR',
-                            'ECR_average',
-                            'average_ECR',
-                            'rank_by_rank',
-                            'rank_by_vote',
-                            'rank_by_number',
-                            'best_Zscore',
-                            'average_Zscore',
-                            'weighted_ECR']
+ALLOWED_RANKING_METHODS = [
+    'ecr',
+    'rank_by_rank',
+    'zscore',
+    'weighted_ecr'
+]
 
 def validate_docking_programs(programs):
     """Validate that the provided docking programs are in the allowed list."""
@@ -100,13 +95,12 @@ def get_parser():
     parser.add_argument('--protein_path', type=valid_file_path, required=True, help='Path to the protein file')
     parser.add_argument('--ref_ligand_path', type=valid_file_path, required=True, help='Path to the reference ligand file')
     parser.add_argument('--known_ligands_path', type=valid_file_path, required=True, help='Path to the experimentally validated ligands library. Known ligand library has to include the true value column and the activity class column')
-    parser.add_argument('--sbvs_ligands_path', type=valid_file_path, required=True, help='Path to the larger ligands library for SBVS')
     parser.add_argument('--true_value_col', type=str, required=True, help='The column name of the true value in the ligands library')
 
     # Optional arguments 
     parser.add_argument('--activity_col', type=str, default='activity_class', help='The column name of the activity class in the ligands library (0 inactive, 1 active)')
     parser.add_argument('--id_col', type=str, default='ID', help='The column name of the ID in the ligands library')
-    parser.add_argument('--protein_name', type=str, default=None, help='The name of the protein')
+    parser.add_argument('--sbvs_ligands_path', type=valid_file_path, help='Path to the larger ligands library for SBVS')
     parser.add_argument('--n_cpus', default=1, type=int, help='The number of CPUs to use in the workflow for Rescoring and ranking steps.')
     parser.add_argument('--out_dir', type=str, default='output', help='The output directory to save the results.')
     parser.add_argument('--verbose', action='store_true', default=False, help='Showing detailed output.')
@@ -138,11 +132,11 @@ def get_parser():
     parser.add_argument(
         '--ranking_method', 
         nargs='+', 
-        default=['best_ECR', 'rank_by_rank', 'best_Zscore', 'weighted_ECR'], 
+        default=['ecr', 'rank_by_rank', 'zscore', 'weighted_ecr'], 
         type=str,
         help=f"The ranking method to use. Allowed values: {', '.join(ALLOWED_RANKING_METHODS)}"
     )
-    parser.add_argument('--runtime_reg', type=float, default=0.1, help='Regularization parameter for the runtime cost for each tool in pose score optimization. It can be list of floats or a float')
+    parser.add_argument('--runtime_reg', nargs='+', type=float, default=[0.0], help='Regularization parameter for the runtime cost for each tool in pose score optimization. It can be list of floats or a float')
     
     # selecting best balanced pipeline args
     parser.add_argument('--corr_range', type=float, default=0.1, help='The allowed range of the Spearman correlation to select a pipeline with lowest runtime cost')
@@ -150,7 +144,6 @@ def get_parser():
 
 
     # interaction analysis args
-    parser.add_argument('--interacting_chains', nargs='+', default=['X'], help='The chains that included in the protein-ligand interactions')
     parser.add_argument('--key_residues', nargs='+', default=None, help='The key residues for protein-ligand interactions to consider in the interaction filtration. If None, The top four frequent interacting residues found in active compounds are considered. added by resdiue number + chain, e.g. 123A 124B , etc')
 
     # diversity selection args
@@ -180,10 +173,7 @@ def main(args):
     ch.setFormatter(formatter)
     logger.addHandler(ch)
     
-    if args.protein_name is None:
-        protein_name = Path(args.protein_path).stem
-    else:
-        protein_name = args.protein_name
+    protein_name = Path(args.protein_path).stem
     
     if args.n_cpus is None:
         n_cpu = os.cpu_count() - 2
@@ -254,7 +244,8 @@ def main(args):
     try:
         df_rescored_merged = merge_activity_values(
             norm_scored_path=OUTPUT / 'rescoring_results' / 'all_rescoring_results.csv',
-            mols_true_value_path=(HERE / args.known_ligands_path), 
+            mols_true_value_path=(HERE / args.known_ligands_path),
+            true_value_idcol=args.id_col,
             true_value_col=args.true_value_col,
             scored_id_col=args.id_col,
             lower_better_true_value=args.true_value_scale,
@@ -285,34 +276,30 @@ def main(args):
     if 'all' in args.ranking_method:
         args.ranking_method = ALLOWED_RANKING_METHODS
 
-    if 'weighted_ECR' in args.ranking_method:
+    if 'weighted_ecr' in args.ranking_method:
         try:
             logger.info("🔷 Performing the pose score optimization for experimentally validated ligands ⏳")
             X, y, docking_cost, scoring_cost, docking_tools, scoring_tools = scores_preprocessing(
                 df_rescored_merged)
             if isinstance(args.runtime_reg, float):
-                alpha = [args.runtime_reg]
+                alphas = [args.runtime_reg]
             else:
-                alpha = args.runtime_reg
+                alphas = args.runtime_reg
+            mapped_normalized_weights_w_alphas = {}
             best_weights = score_pose_optimization(
-                X=X, 
+                X=X,
                 y=y, 
                 docking_cost=docking_cost, 
                 scoring_cost=scoring_cost, 
                 weights_path= OUTPUT / 'best_weights.pkl.npy', 
-                alphas=alpha, 
+                alphas=alphas, 
                 )
+            for alpha in alphas:
+                normalized_weights = mapping_normalized_weights(best_weights[alpha], scoring_tools, docking_tools)
+                mapped_normalized_weights_w_alphas[alpha] = normalized_weights
             logger.info(f"✅ Best weights are saved at {HERE / 'test_data/best_weights.pkl.npy'}")
         except Exception as e:
             logger.error(f"❗An error occured while performing the pose score optimization: {e}")
-            return
-        
-        try:
-            logger.info("🔷 Normalize the optimized weights to the docking and scoring tools ...")
-            for alpha in best_weights.keys():
-                normalized_weights = mapping_normalized_weights(best_weights[alpha], scoring_tools, docking_tools)
-        except Exception as e:
-            logger.error(f"❗An error occured while normalizing the optimized weights to the docking and scoring tools: {e}")
             return
         
     try:
@@ -323,13 +310,15 @@ def main(args):
             ranking_methods=args.ranking_method,
             df_rescored=df_rescored_norm,
             output_path=OUTPUT,
+            ncpus=args.n_cpus
             )
         else:
             poses_ranking(
             ranking_methods=args.ranking_method,
             df_rescored=df_rescored_norm,
             output_path=OUTPUT,
-            weights=normalized_weights,
+            mapped_weights=mapped_normalized_weights_w_alphas,
+            ncpus=args.n_cpus
             )
         logger.info(f"✅ Ranked ligands are saved at {OUTPUT / 'correlations_general' /  'all_ranked.csv'}")
     except Exception as e:
@@ -342,7 +331,6 @@ def main(args):
         corr_df = pd.read_csv(OUTPUT / 'correlations_general' /  'all_ranked.csv')
         range_workflows = corr_df[(corr_df['spearman_correlation'] >= corr_df['spearman_correlation'].max() - args.corr_range) &
                           (corr_df['enrichment_factor'] >= corr_df.loc[0, 'enrichment_factor'] - args.ef_range)]
-        
         # select row with the minimum cost value
         selected_workflow = range_workflows.loc[range_workflows['cost_per_pipeline'].idxmin()]
         logger.info(
@@ -360,7 +348,11 @@ def main(args):
     except Exception as e:
         logger.error(f"❗An error occured while selecting the best balanced pipeline: {e}")
         return
-
+    
+    if args.sbvs_ligands_path is None:
+        logger.info("🔷 The larger ligands library for SBVS is not provided. The workflow will be terminated here.🏁")
+        return
+        
     # screen the larger ligands library for SBVS
     logger.info("Screening the larger ligands library for SBVS ⏳⏳⏳")
     larger_data_output = OUTPUT / Path(args.sbvs_ligands_path).stem
@@ -414,21 +406,16 @@ def main(args):
 
     logger.info(f"🔷 Ranking unknown poses using {selected_ranking_method} ...")
     ranking_methods_dict = {  
-        'method1_ECR_best' : method1_ECR_best, 
-        'method2_ECR_average' : method2_ECR_average, 
-        'method3_avg_ECR' : method3_avg_ECR,
-        'method4_RbR' : method4_RbR,
-        'method5_RbV' : method5_RbV,
-        'method6_Zscore_best': method6_Zscore_best,
-        'method7_Zscore_avg': method7_Zscore_avg,
-        'method8_RbN': method8_RbN,
-        'method9_weighted_ECR_best': method9_weighted_ECR_best
+        'ecr' : exponential_consensus_ranking, 
+        'rank_by_rank' : rank_by_rank,
+        'zscore': Zscore,
+        'weighted_ecr': weighted_ECR
         }
     
     try:
         rescored_df_sbvs = pd.read_csv(larger_data_output / 'rescoring_results' / 'all_rescoring_results.csv')
         rescored_df_sbvs_norm = norm_scores(rescored_df_sbvs)
-        if selected_ranking_method == 'method9_weighted_ECR_best':
+        if selected_ranking_method == 'weighted_ecr':
             ranked_sbvs_ligands = ranking_methods_dict[selected_ranking_method](
                 df=rescored_df_sbvs_norm,
                 selected_scores=selected_sfs,
@@ -454,7 +441,7 @@ def main(args):
         return
 
     # Interaction analysis
-    logger.info("🔷 Performing the interaction analysis using PLIPify ⏳⏳")
+    logger.info("🔷 Performing the interaction analysis using PLIP⏳⏳")
     try:
         if args.key_residues is None:
             actives_path = actives_extraction( 
@@ -464,29 +451,27 @@ def main(args):
                 )
             actives_paths = split_sdf_path(actives_path)
             os.remove(actives_path)
-            for chain in args.interacting_chains:
-                interx_csv = OUTPUT / f'{protein_name}_{chain}_interx.csv'
-                if interx_csv.is_file():
-                    fp_focused = pd.read_csv(interx_csv)
-                    continue
-                fp_focused = plipify_fp_interaction(
+            # for chain in args.interacting_chains:
+            interx_csv = OUTPUT / f'{protein_name}_interx.csv'
+            if interx_csv.is_file():
+                mols_interx_fp = pd.read_csv(interx_csv)
+                logger.info(f"✅ Protein-ligand interactions are already saved at {interx_csv}")
+            else:
+                mols_interx_fp = plipify_fp_interaction(
                     ligands_path=actives_paths, 
-                    protein_path=HERE / args.protein_path, 
-                    protein_name=protein_name, 
-                    chains=chain,
-                    output_file=OUTPUT / f'{protein_name}_interactions_{chain}.png'
+                    protein_path=HERE / args.protein_path,
+                    output_file=OUTPUT / f'{protein_name}_interactions.png'
                     )
-                fp_focused['total_interactions'] = fp_focused.sum(axis=1)
-                fp_focused.to_csv(interx_csv, index_label='residues')
+                aggregated_interx_fp = aggregate_interactions(mols_interx_fp)
+                aggregated_interx_fp.to_csv(interx_csv, index_label='residues')
                 
-            logger.info(f"✅ Protein-ligand interactions with chain {chain} are saved at {interx_csv}")
-            for chain in args.interacting_chains:
-                    fp_interx = pd.read_csv(interx_csv).sort_values(by='total_interactions', ascending=False)
-                    key_interactions_resno = list(fp_interx.head(4).residues)
-                    key_interactions_resno = [f'{resno}{chain}' for resno in key_interactions_resno]
+            logger.info(f"✅ Protein-ligand interactions are saved at {interx_csv}")
+            fp_interx = pd.read_csv(interx_csv)
+            aggregated_df = fp_interx.groupby('residue', as_index=False)['count'].sum().sort_values(by='count', ascending=False)
+            key_interactions_resno = aggregated_df.head(4)['residue'].tolist()
         else:
             key_interactions_resno = args.key_residues
-        logger.info(f"🔑 Key interactions for chain {args.interacting_chains} with residues are: {key_interactions_resno}")
+        logger.info(f"🔑 Key residues are: {key_interactions_resno}")
     except Exception as e:
         logger.error(f"❗An error occured while performing the interaction analysis: {e}")
         return
@@ -498,26 +483,22 @@ def main(args):
         if selected_ligands_interx.is_file():
             logger.info(f"✅ Selected ligands with specific interactions are already saved at {selected_ligands_interx}")
         else:
+            logger.info("🔷 Performing PLIP interaction analysis for the larger library ...")
             if not interactions_dict_path.is_file():
                 ligands_paths = split_sdf_path(larger_data_output / 'allposes.sdf')
-                allposes_interaction_fp = indiviudal_interaction_fp_generator(
+                allposes_interaction_fp = plipify_fp_interaction(
                                     sdfs_path=ligands_paths, 
-                                    protein_file=args.protein_path, 
-                                    protein_name=protein_name, 
-                                    included_chains=args.interacting_chains, 
+                                    protein_file=args.protein_path,
                                     output_dir=interactions_dict_path
                                     )
-            interactions_df = read_interactions_json(
-                        json_file=interactions_dict_path, 
-                        output_file=larger_data_output / 'allposes_interaction_fps_final.csv'
-                        )
-            agg_interx_df = interactions_aggregation(
-                                interactions_df=interactions_df.reset_index(),
-                                important_interactions=key_interactions_resno,
-                                )
-            agg_interx_df.replace(0, np.nan, inplace=True)
-            agg_interx_df.dropna(inplace=True)
-            agg_interx_df.to_csv(larger_data_output / 'selected_ligands_interaction.csv', index=False)
+                allposes_interaction_fp.to_csv(larger_data_output / 'allposes_interaction_fps.csv', index=False)
+                logger.info(f"✅ PLIP interactions are saved at {larger_data_output / 'allposes_interaction_fps.csv'}")
+            allposes_fp_interx = pd.read_csv(larger_data_output / 'allposes_interaction_fps.csv')
+            # filtering the compounds with key interactions at any pose
+            allposes_interaction_fp['ID'] = [str(idx).split('_')[0] for idx in allposes_interaction_fp.index]
+            filtered_plip_interx = allposes_interaction_fp.groupby('ID')[key_interactions_resno].apply(lambda group: (group != 0).any().any())
+            interactions_df = allposes_fp_interx[allposes_fp_interx['ID'].isin(filtered_plip_interx[filtered_plip_interx].index)]
+            interactions_df.to_csv(larger_data_output / 'selected_ligands_interaction.csv', index=False)
         
         logger.info(f"✅ Selected ligands with specific interactions are saved at {larger_data_output / 'selected_ligands_interaction.csv'}")
     except Exception as e:
@@ -527,7 +508,7 @@ def main(args):
     logger.info("🔷 Concatenating the selected ligands from the interaction analysis with the ranked ligands ...")
     try:
         ranked_ligands = pd.read_csv(larger_data_output / 'ranked_ligands.csv')
-        selected_ligands = pd.read_csv(larger_data_output / 'selected_ligands_interaction.csv').rename(columns={'id': 'ID'})
+        selected_ligands = pd.read_csv(larger_data_output / 'selected_ligands_interaction.csv')
         selected_ligands['passed_interx_filtration'] = 1
         merged_df = pd.merge(ranked_ligands, selected_ligands[['ID', 'passed_interx_filtration']], how='left').fillna(0)
         merged_df.to_csv(larger_data_output / 'ranked_selected_interx_ligands.csv', index=False)

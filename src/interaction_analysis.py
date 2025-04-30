@@ -1,6 +1,6 @@
 import os
 import json
-import shutil
+import ast
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -35,6 +35,12 @@ def plipify_fp_interaction(
     Returns:
         mol_interx_fp: Dict of all interactions
     '''
+    if output_file.exists():
+        print('Interactions are already calculated')
+        mols_interx_fp = pd.read_csv(output_file, index_col=0)
+        # make each value as a list
+        mols_interx_fp = mols_interx_fp.applymap(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+        return mols_interx_fp
     if isinstance(ligands_path, Path):
         ligand_pdb_paths = [_sdf2pdb_preprocessing(ligands_path)]
     elif len(ligands_path) > 1:
@@ -45,27 +51,7 @@ def plipify_fp_interaction(
         for ligand_pdb in ligand_pdb_paths
     ]
     mols_interx_fp = interaction_fp_generator(ligand_protein_cpx_paths, output_file)
-    mols_interx_fp.to_csv(output_file)
     return mols_interx_fp
-    # else:
-    #     raise ValueError("No sdf files found")
-    # mol_interx_fp = {}
-    # for ligand_pdb in ligand_pdb_paths:
-    #     interaction_fp = []
-    #     ligand_protein_cpx_chains = ligand_protein_complex(
-    #         ligand_pdb, protein_path)
-    #     for cpx in ligand_protein_cpx_chains:
-    #         fp_focused = interaction_fp_generator(ligand_protein_cpx_paths, output_file)
-    #         fp = [f'{i}{chain}' for i in fp.index]
-    #         interaction_fp.extend(fp)
-    #         os.remove(str(cpx))
-    #         os.remove(f'/tmp/{cpx.stem}_protonated.pdb')
-    #         # os.remove(str(cpx))
-    #     mol_interx_fp[ligand_pdb.stem] = interaction_fp
-    # # print(type(ligands_path), ligands_path)
-    # os.remove(str(ligands_path))
-    # return mol_interx_fp
-
 
 def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFrame:
     """
@@ -78,7 +64,7 @@ def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFram
         fp_focused: DataFrame of the interactions
     """
     interactions_dict = {}
-    for cpx in tqdm(complex_path):
+    for i, cpx in tqdm(enumerate(complex_path)):
         interactions_dict[cpx.stem] = {}
         my_mol = PDBComplex()
         my_mol.load_pdb(str(cpx))
@@ -94,8 +80,10 @@ def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFram
                 interactions_dict[cpx.stem][resname] = []
             interactions_dict[cpx.stem][resname].append(interx_type)
         os.remove(str(cpx))
-        os.remove(f'/tmp/{cpx.stem}_protonated.pdb') 
-    mols_interx_fp = pd.DataFrame(interactions_dict).T.fillna(0)
+        os.remove(f'/tmp/{cpx.stem}_protonated.pdb')
+        if  (i % 500 == 0 and i != 0) or i == len(complex_path) - 1:
+            mols_interx_fp = pd.DataFrame(interactions_dict).T.fillna(0)
+            mols_interx_fp.to_csv(output_path)
     return mols_interx_fp
 
 # def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFrame:

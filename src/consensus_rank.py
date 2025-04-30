@@ -304,9 +304,9 @@ def weighted_ECR(
                 # print(docking_tool, len(df[mask]))
                 sigma = mapped_weights[col] * mapped_weights[docking_tool] * len(df[mask])
                 
-                if sigma <= 0.01:
-                    sigma = 0.01
-                    continue
+                # if sigma <= 0.01:
+                #     sigma = 0.01
+                #     continue
                 df.loc[mask, col] = df.loc[mask, col].rank(method='min', ascending=False)
                 df.loc[mask, col] = np.exp(-(df.loc[mask, col] / sigma)) / sigma
         df[ranking_method_name] = df[selected_scores].sum(axis=1, numeric_only=True)

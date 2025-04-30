@@ -137,10 +137,11 @@ def _gnina_docking(
         f' -l {ligands_path}'
         f' -o {sdf_output}'
         f' --autobox_ligand {str(ref_file)}'
-        f' --seed 1637317264'
+        f' --seed 42'
         f' --exhaustiveness {exhaustiveness}'
         f' --num_modes {str(n_poses)}'
         ' --cnn_scoring rescore'
+        ' --cnn crossdock_default2018'
         ' --cnn crossdock_default2018'
     )
     start_time = time.time()
@@ -208,7 +209,7 @@ def _smina_docking(
         f'./software/gnina -r {protein_file}'
         f' -l {ligands_path} -o {sdf_output}'
         f' --autobox_ligand {str(ref_file)}'
-        ' --autobox_extend=1 --seed 1637317264'
+        ' --autobox_extend=1 --seed 42'
         f' --exhaustiveness {exhaustiveness} --num_modes {str(n_poses)} --cnn_scoring=none'
     )
     if sdf_output.name not in os.listdir(sdf_output.parent):
@@ -441,13 +442,13 @@ def _diffdock_docking(
             f" --no_final_step_noise"
         )
         # check for all poses
-        if (sdf_output / 'diffdock_poses.sdf').exists():
-            print('Poses are already generated using DiffDock or Local DiffDock')
+        if sdf_output.exists():
+            print(f'Poses are already generated using DiffDock or Local DiffDoc in {sdf_output}')
             break
         if local_diffdock:
             diffdock_cmd += f" --binding_site_residues {str(protein_file.parent / pocket_res_indices)}"
         # Check for each molecule if it is already docked
-        if sdf_output.name in os.listdir(sdf_output.parent):
+        if id in os.listdir(sdf_output.parent):
             print(f"Compound {id} is already docked with DiffDock")
             continue
 

@@ -9,7 +9,7 @@ Once selected, the workflow can be applied on larger ligands library The results
 As a validation case study, the workflow was applied to the **EGFR target** (Epidermal Growth Factor Receptor) to compare different SBVS pipelines and assess their relative performance. Results can be found in `egfr_data/`.
 
 <p align="center">
-  <img src="moldocklab_fig.png" alt="MolDockLab Workflow Diagram">
+  <img src="moldocklab_fig.jpg" alt="MolDockLab Workflow Diagram">
 </p>
 
 MolDockLab was used in a real case study to find potential hits for an antibacterial tet called **Energy Coupling Factor Transporters (ECF-T)**, in a collaboration work with Helmholtz-Institut für Pharmaceutical Research Saarland (HIPS). Through screening the in-house library of around 6.6K compounds, it resulted in the identification of **two new antibacterial classes** for ECF-T target, which were validated experimentally.

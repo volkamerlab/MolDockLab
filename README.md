@@ -2,7 +2,7 @@
 
 MolDockLab is a **data-driven workflow** developed to identify the best balanced consensus **Structure-Based Virtual Screening (SBVS)** workflow for a target of interest.
 
-The workflow integrates 5 **docking tools**, 15 **scoring functions**, and 9 **consensus ranking methods** to select the best balanced consensus SBVS for an experimentally-validated dataset. 
+The workflow integrates 5 **docking tools**, 15 **scoring functions**, and 4 **consensus ranking methods** to select the best balanced consensus SBVS for an experimentally-validated dataset. 
 
 Once selected, the workflow can be applied on larger ligands library The results are then filtered by either manually determining the key interactions or by automatically selecting the four most frequent interactions and choosing the most diverse compounds, achieving optimal screening performance for hit identification.
 

@@ -18,11 +18,9 @@ from src.utilities import run_command
 
 
 def plipify_fp_interaction(
-        ligands_path:Path,
-        protein_path:Path,
-        output_file:Path
-        ) -> dict:
-    '''
+    ligands_path: Path, protein_path: Path, output_file: Path
+) -> dict:
+    """
     This function loads ligands and protein using pymol script commands and save both protein and ligand as a complex as pdb file.
     It splits Chain C and D to separate pdb file and change ligand according to chain.
 
@@ -30,22 +28,24 @@ def plipify_fp_interaction(
         ligands_path: single ligand path or multiple ligand paths in a list
         protein_path: path to protein in pdb format
         chains: list of chains to split
-        output_file: single or multiple PLIPify visualization, if single give a single sdf structure as a path, 
+        output_file: single or multiple PLIPify visualization, if single give a single sdf structure as a path,
                 if multiple give a list of sdf paths
     Returns:
         mol_interx_fp: Dict of all interactions
-    '''
+    """
     if output_file.exists():
-        print('Interactions are already calculated')
+        print("Interactions are already calculated")
         mols_interx_fp = pd.read_csv(output_file, index_col=0)
         # make each value as a list
-        mols_interx_fp = mols_interx_fp.applymap(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+        mols_interx_fp = mols_interx_fp.applymap(
+            lambda x: ast.literal_eval(x) if isinstance(x, str) else x
+        )
         return mols_interx_fp
     if isinstance(ligands_path, Path):
         ligand_pdb_paths = [_sdf2pdb_preprocessing(ligands_path)]
     elif len(ligands_path) > 1:
         ligand_pdb_paths = [_sdf2pdb_preprocessing(sdf) for sdf in ligands_path]
-        
+
     ligand_protein_cpx_paths = [
         ligand_protein_complex(ligand_pdb, protein_path)[0]
         for ligand_pdb in ligand_pdb_paths
@@ -53,9 +53,10 @@ def plipify_fp_interaction(
     mols_interx_fp = interaction_fp_generator(ligand_protein_cpx_paths, output_file)
     return mols_interx_fp
 
-def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFrame:
+
+def interaction_fp_generator(complex_path: Path, output_path: Path) -> pd.DataFrame:
     """
-    This function takes a path of complex pdb files and create a fingerprint 
+    This function takes a path of complex pdb files and create a fingerprint
     of the interactions
     Args:
         complex_path: path of the complex pdb files
@@ -69,7 +70,7 @@ def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFram
         my_mol = PDBComplex()
         my_mol.load_pdb(str(cpx))
         small_ligands = str(my_mol).split()
-        my_bsid = [bsid for bsid in small_ligands if bsid.startswith('HIT')]
+        my_bsid = [bsid for bsid in small_ligands if bsid.startswith("HIT")]
         my_mol.analyze()
         my_interactions = my_mol.interaction_sets[my_bsid[0]]
         # print(my_interactions.all_itypes)
@@ -80,15 +81,16 @@ def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFram
                 interactions_dict[cpx.stem][resname] = []
             interactions_dict[cpx.stem][resname].append(interx_type)
         os.remove(str(cpx))
-        os.remove(f'/tmp/{cpx.stem}_protonated.pdb')
-        if  (i % 500 == 0 and i != 0) or i == len(complex_path) - 1:
+        os.remove(f"/tmp/{cpx.stem}_protonated.pdb")
+        if (i % 500 == 0 and i != 0) or i == len(complex_path) - 1:
             mols_interx_fp = pd.DataFrame(interactions_dict).T.fillna(0)
             mols_interx_fp.to_csv(output_path)
     return mols_interx_fp
 
+
 # def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFrame:
 #     """
-#     This function takes a path of complex pdb files and create a fingerprint 
+#     This function takes a path of complex pdb files and create a fingerprint
 #     of the interactions
 #     Args:
 #         complex_path: path of the complex pdb files
@@ -97,7 +99,7 @@ def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFram
 #         fp_focused: DataFrame of the interactions
 #     """
 
-    
+
 #     structures = [Structure.from_pdbfile(str(pdb),ligand_name="HIT") for pdb in tqdm(complex_path)]
 
 #     fp = InteractionFingerprint().calculate_fingerprint(
@@ -119,9 +121,10 @@ def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFram
 
 #     return fp_focused
 
+
 def split_sdf_path(sdf_path: Path) -> list:
     """
-    This function takes a path of sdf file and split it into multiple sdf files 
+    This function takes a path of sdf file and split it into multiple sdf files
     with the same name of the ligand
 
     Args :
@@ -151,7 +154,7 @@ def split_sdf_path(sdf_path: Path) -> list:
     return ligands_path
 
 
-def _sdf2pdb_preprocessing(sdf_file:Path) -> Path:
+def _sdf2pdb_preprocessing(sdf_file: Path) -> Path:
     """
     This function takes a path of sdf file and convert it to pdb file
     Args:
@@ -161,9 +164,9 @@ def _sdf2pdb_preprocessing(sdf_file:Path) -> Path:
     """
     pdb_path = sdf_file.parent / f"{sdf_file.stem}.pdb"
     cmd.load(sdf_file)
-    cmd.alter('resi 0', 'resi = 287')
-    cmd.alter('resn UNK', 'resn = "HIT"')
-    cmd.alter('HETATM', 'chain="E"')
+    cmd.alter("resi 0", "resi = 287")
+    cmd.alter("resn UNK", 'resn = "HIT"')
+    cmd.alter("HETATM", 'chain="E"')
     cmd.save(pdb_path)
     cmd.delete("all")
     return pdb_path
@@ -172,9 +175,9 @@ def _sdf2pdb_preprocessing(sdf_file:Path) -> Path:
 
 
 def ligand_protein_complex(
-        ligand_path:Path, 
-        protein_path:Path, 
-        ) -> list:
+    ligand_path: Path,
+    protein_path: Path,
+) -> list:
     """
     This function takes a path of ligand and protein and save them as a complex pdb file
     Args:
@@ -220,7 +223,7 @@ def ligand_protein_complex(
     return ligand_protein_cpx_chains
 
 
-def read_interactions_json(json_file:Path, output_file:Path) -> pd.DataFrame:
+def read_interactions_json(json_file: Path, output_file: Path) -> pd.DataFrame:
     """
     This function reads the interactions from a JSON file and convert it to a CSV file
     Args:
@@ -230,16 +233,18 @@ def read_interactions_json(json_file:Path, output_file:Path) -> pd.DataFrame:
         interactions_df: DataFrame of the interactions
     """
     if os.path.exists(output_file):
-        print('Interactions are converted to CSV file.')
+        print("Interactions are converted to CSV file.")
         df = pd.read_csv(output_file)
         return df
-    with open(json_file, 'r') as file:
+    with open(json_file, "r") as file:
         interactions_dict = json.load(file)
-    flattened = [(cpd, resi)
-                 for resi, cpds in interactions_dict.items() for cpd in cpds]
-    flattened_df = pd.DataFrame(flattened, columns=['Poses', 'Residues'])
+    flattened = [
+        (cpd, resi) for resi, cpds in interactions_dict.items() for cpd in cpds
+    ]
+    flattened_df = pd.DataFrame(flattened, columns=["Poses", "Residues"])
     interactions_df = flattened_df.pivot_table(
-        index='Poses', columns='Residues', aggfunc=len, fill_value=0)
+        index="Poses", columns="Residues", aggfunc=len, fill_value=0
+    )
     interactions_df.to_csv(output_file)
     os.remove(json_file)
     return interactions_df
@@ -273,12 +278,12 @@ def read_interactions_json(json_file:Path, output_file:Path) -> pd.DataFrame:
 #         found_interx_fp = {k: set(v) for k, v in allposes_interaction_fp.items()}
 #     if (output_dir.parent / 'allposes_interaction_fps_final.csv').is_file():
 #         found_interx_fp = pd.read_csv(output_dir.parent / 'allposes_interaction_fps_final.csv')['Poses'].tolist()
-    
+
 #     for i, sdf in enumerate(sdfs_path):
 #         if sdf.stem in found_interx_fp:
 #             print(f"Interactions for {sdf.stem} are already calculated.")
 #             continue
-            
+
 #         fp = plipify_fp_interaction(
 #             sdf, protein_file, included_chains, output_dir)
 #         allposes_interaction_fp.update(fp)
@@ -327,12 +332,14 @@ def read_interactions_json(json_file:Path, output_file:Path) -> pd.DataFrame:
 #     aggregated_df = interactions_df.groupby('id').sum()
 #     return aggregated_df[important_interactions].reset_index()
 
+
 def actives_extraction(
-        test_set_docked_path : Path,
-        merged_rescoring_path : Path,
-        docking_tool : Union[str, list]):
+    test_set_docked_path: Path,
+    merged_rescoring_path: Path,
+    docking_tool: Union[str, list],
+):
     """
-    This function filters the actives from the docking poses based on a threshold 
+    This function filters the actives from the docking poses based on a threshold
     of the true value and the selected docking tool
     Args:
         test_set_docked_path: str, path to the sdf file of the docking poses
@@ -343,31 +350,36 @@ def actives_extraction(
     """
     docked_df = PandasTools.LoadSDF(str(test_set_docked_path))
     df_scores = pd.read_csv(str(merged_rescoring_path))
-    actives_poses = df_scores[df_scores['activity_class'] == 1]
+    actives_poses = df_scores[df_scores["activity_class"] == 1]
     if isinstance(docking_tool, str):
-        actives_id = actives_poses[actives_poses['docking_tool']
-                                   == docking_tool]['ID'].tolist()
+        actives_id = actives_poses[actives_poses["docking_tool"] == docking_tool][
+            "ID"
+        ].tolist()
     if isinstance(docking_tool, list):
-        actives_id = actives_poses[actives_poses['docking_tool'].isin(
-            docking_tool)]['ID'].tolist()
+        actives_id = actives_poses[actives_poses["docking_tool"].isin(docking_tool)][
+            "ID"
+        ].tolist()
     print(f"Number of active compounds: {len(actives_id)}")
-    df_filtered = docked_df[docked_df['ID'].isin(actives_id)]
+    df_filtered = docked_df[docked_df["ID"].isin(actives_id)]
     actives_path = test_set_docked_path.parent / "docked_actives.sdf"
     PandasTools.WriteSDF(
-        df_filtered,
-        str(actives_path),
-        molColName='ROMol',
-        idName='ID')
+        df_filtered, str(actives_path), molColName="ROMol", idName="ID"
+    )
     return actives_path
 
+
 def aggregate_interactions(interactions):
-    melted_df = interactions.reset_index().melt(id_vars="index", var_name="residue", value_name="interactions")
+    melted_df = interactions.reset_index().melt(
+        id_vars="index", var_name="residue", value_name="interactions"
+    )
     melted_df = melted_df[melted_df["interactions"] != 0]
 
     # def count_interactions(interactions):
     #     return dict(Counter(interactions))
 
-    melted_df["interaction_counts"] = melted_df["interactions"].apply(lambda x: dict(Counter(x)))
+    melted_df["interaction_counts"] = melted_df["interactions"].apply(
+        lambda x: dict(Counter(x))
+    )
     melted_df.sort_values(by="residue", inplace=True)
     melted_df = melted_df.explode("interactions")
 

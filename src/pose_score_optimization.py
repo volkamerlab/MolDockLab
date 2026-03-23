@@ -26,71 +26,76 @@ def scores_preprocessing(df: pd.DataFrame) -> tuple:
     """
 
     cost_dict = {
-        'localdiffdock': 407.5,
-        'diffdock': 407.5,
-        'flexx': 3.33,
-        'smina': 99.9,
-        'gnina': 105.8,
-        'plants': 6.85,
-        'cnnscore': 0.31,
-        'cnnaffinity': 0.31,
-        'smina_affinity': 0.31,
-        'ad4': 0.28,
-        'linf9': 0.24,
-        'rtmscore': 0.41,
-        'vinardo': 0.29,
-        'scorch': 4.63,
-        'hyde': 2.0,
-        'chemplp': 0.121,
-        'rfscore_v1': 0.682,
-        'rfscore_v2': 0.687,
-        'rfscore_v3': 0.69,
-        'vina_hydrophobic': 0.69,
-        'vina_intra_hydrophobic': 0.69
+        "localdiffdock": 407.5,
+        "diffdock": 407.5,
+        "flexx": 3.33,
+        "smina": 99.9,
+        "gnina": 105.8,
+        "plants": 6.85,
+        "cnnscore": 0.31,
+        "cnnaffinity": 0.31,
+        "smina_affinity": 0.31,
+        "ad4": 0.28,
+        "linf9": 0.24,
+        "rtmscore": 0.41,
+        "vinardo": 0.29,
+        "scorch": 4.63,
+        "hyde": 2.0,
+        "chemplp": 0.121,
+        "rfscore_v1": 0.682,
+        "rfscore_v2": 0.687,
+        "rfscore_v3": 0.69,
+        "vina_hydrophobic": 0.69,
+        "vina_intra_hydrophobic": 0.69,
     }
 
-    features = [col for col in df.columns if col not in [
-            'docking_method',
-            'pose',
-            'ID',
-            'id',
-            'docking_tool',
-            'activity_class'
-            ]]
+    features = [
+        col
+        for col in df.columns
+        if col
+        not in ["docking_method", "pose", "ID", "id", "docking_tool", "activity_class"]
+    ]
     df_copy = df.copy()
-    df_copy[features] = df_copy[features].apply(pd.to_numeric, errors='coerce')
+    df_copy[features] = df_copy[features].apply(pd.to_numeric, errors="coerce")
     scaler = StandardScaler()
     df_copy[features] = scaler.fit_transform(df_copy[features])
     df_copy.dropna(subset=features, inplace=True)
-    df_copy['pose'] = df_copy['ID'].apply(lambda x: x.split('_')[2]).astype(int) - 1
+    df_copy["pose"] = df_copy["ID"].apply(lambda x: x.split("_")[2]).astype(int) - 1
 
-    docking_tools = list(df_copy['docking_tool'].unique())
-    scoring_tools = [f for f in features if f not in ['true_value', 'cpd_per_second']]
-    poses = list(df_copy['pose'].unique())
+    docking_tools = list(df_copy["docking_tool"].unique())
+    scoring_tools = [f for f in features if f not in ["true_value", "cpd_per_second"]]
+    poses = list(df_copy["pose"].unique())
 
     docking_cost = np.zeros(len(docking_tools))
     rescoring_cost = np.zeros(len(scoring_tools))
 
-    ligands = list(df_copy['id'].unique())
-    values = torch.zeros((len(ligands),len(docking_tools),len(scoring_tools),len(poses))) * torch.nan
+    ligands = list(df_copy["id"].unique())
+    values = (
+        torch.zeros((len(ligands), len(docking_tools), len(scoring_tools), len(poses)))
+        * torch.nan
+    )
     for _, row in tqdm.tqdm(df_copy.iterrows(), total=len(df_copy)):
         for rescoring_method in scoring_tools:
-            lig_idx = ligands.index(row['id'])
+            lig_idx = ligands.index(row["id"])
 
-            dck_idx = docking_tools.index(row['docking_tool'])
+            dck_idx = docking_tools.index(row["docking_tool"])
             if docking_cost[dck_idx] == 0:
-                docking_cost[dck_idx] = cost_dict[row['docking_tool'].lower()]
+                docking_cost[dck_idx] = cost_dict[row["docking_tool"].lower()]
             rsc_idx = scoring_tools.index(rescoring_method)
             if rescoring_cost[rsc_idx] == 0:
                 rescoring_cost[rsc_idx] = cost_dict[rescoring_method.lower()]
-            values[lig_idx, dck_idx, rsc_idx, int(
-                row['pose'])] = row[rescoring_method]
+            values[lig_idx, dck_idx, rsc_idx, int(row["pose"])] = row[rescoring_method]
     X = values.max(3)[0]
-    y = torch.tensor([df_copy.set_index('id').loc[ligand,'true_value'].values[0] for ligand in ligands])
+    y = torch.tensor(
+        [
+            df_copy.set_index("id").loc[ligand, "true_value"].values[0]
+            for ligand in ligands
+        ]
+    )
     return X, y, docking_cost, rescoring_cost, docking_tools, scoring_tools
 
 
-def prediction(c_r: torch.Tensor, c_d:torch.Tensor, X: torch.Tensor) -> torch.Tensor:
+def prediction(c_r: torch.Tensor, c_d: torch.Tensor, X: torch.Tensor) -> torch.Tensor:
     """
     Predict the binding affinity
     Args:
@@ -122,14 +127,14 @@ def prepare_parameters(x: np.array, num_docking_tools: int) -> tuple:
 
 
 def loss(
-        x_rand : np.array, 
-        X: torch.Tensor, 
-        y: torch.Tensor, 
-        docking_cost: np.array, 
-        scoring_cost: np.array, 
-        reg : float=0.1, 
-        verbose : bool=False
-        ) -> float:
+    x_rand: np.array,
+    X: torch.Tensor,
+    y: torch.Tensor,
+    docking_cost: np.array,
+    scoring_cost: np.array,
+    reg: float = 0.1,
+    verbose: bool = False,
+) -> float:
     """
     Loss function for the optimization
     Args:
@@ -146,10 +151,9 @@ def loss(
     c = torch.tensor(x_rand)
     c_r, c_d = prepare_parameters(c, X.shape[1])
     model_loss = ((prediction(c_r, c_d, X) - y) ** 2).mean().item()
-    regularization = ((c_d * docking_cost).abs().sum() +
-                      (c_r * scoring_cost).abs().sum())
+    regularization = (c_d * docking_cost).abs().sum() + (c_r * scoring_cost).abs().sum()
     if verbose:
-        print(f'model loss={model_loss}')
+        print(f"model loss={model_loss}")
 
     return model_loss + (reg * regularization)
 
@@ -161,23 +165,22 @@ def _optimize_iteration(seed, X, y, docking_cost, scoring_cost, reg):
     len_x0 = len(docking_cost) + len(scoring_cost)
     x0 = np.random.rand(len_x0)
     res = minimize(
-        loss,
-        x0,
-        args=(X, y, docking_cost, scoring_cost, reg),
-        method='Nelder-Mead'
+        loss, x0, args=(X, y, docking_cost, scoring_cost, reg), method="Nelder-Mead"
     )
     return res.fun, res.x
+
+
 def optimize_score(
-        X: torch.Tensor, 
-        y: torch.Tensor, 
-        docking_cost: np.array, 
-        scoring_cost: np.array, 
-        reg: float = 0.3, 
-        iter: int = 500
-        ) -> tuple:
+    X: torch.Tensor,
+    y: torch.Tensor,
+    docking_cost: np.array,
+    scoring_cost: np.array,
+    reg: float = 0.3,
+    iter: int = 500,
+) -> tuple:
     """
     Optimize the weights for the scoring function.
-    
+
     Args:
         X (torch.Tensor): Tensor of shape (n_ligands, n_docking_tools, n_scoring_tools, n_poses)
         y (torch.Tensor): Tensor of shape (n_ligands)
@@ -185,7 +188,7 @@ def optimize_score(
         scoring_cost (np.array): Array of shape (n_scoring_tools)
         reg (float): Regularization parameter.
         iter (int): Number of optimization iterations.
-    
+
     Returns:
         losses (list): List of floats, the loss for each iteration.
         weights (list): List of np.array, the weights from each iteration.
@@ -196,12 +199,14 @@ def optimize_score(
     # Set a fixed seed for reproducibility and generate random seeds for each iteration.
     random.seed(0)
     random_seeds = [random.randint(0, 1000000) for _ in range(iter)]
-    
+
     # Option 1: Parallelize using ProcessPoolExecutor.
     with concurrent.futures.ProcessPoolExecutor() as executor:
         # Submit all jobs.
         futures = [
-            executor.submit(_optimize_iteration, seed, X, y, docking_cost, scoring_cost, reg)
+            executor.submit(
+                _optimize_iteration, seed, X, y, docking_cost, scoring_cost, reg
+            )
             for seed in random_seeds
         ]
         # Use tqdm to display a progress bar over the completed futures.
@@ -209,18 +214,19 @@ def optimize_score(
             loss_val, weight_val = future.result()
             losses.append(loss_val)
             weights.append(weight_val)
-    
+
     return losses, weights
 
 
 def score_pose_optimization(
-        X: torch.Tensor, 
-        y : torch.Tensor, 
-        docking_cost : np.array, 
-        scoring_cost : np.array, 
-        weights_path : Path,
-        alphas : list,
-        iter : int =500) -> dict:
+    X: torch.Tensor,
+    y: torch.Tensor,
+    docking_cost: np.array,
+    scoring_cost: np.array,
+    weights_path: Path,
+    alphas: list,
+    iter: int = 500,
+) -> dict:
     """
     Optimize the weights for the scoring functions with list of different regularization parameters
     Args:
@@ -236,7 +242,10 @@ def score_pose_optimization(
     """
 
     if weights_path.exists():
-        with open(str(weights_path), 'rb',) as file:
+        with open(
+            str(weights_path),
+            "rb",
+        ) as file:
             min_weights = np.load(file, allow_pickle=True)
         best_weights = min_weights.item()
         return best_weights
@@ -244,8 +253,10 @@ def score_pose_optimization(
     best_weights = {}
 
     for alpha in alphas:
-        print(f'Optimization with Regularization: {alpha}')
-        losses, weights = optimize_score(X, y, docking_cost, scoring_cost, reg=alpha, iter=iter)
+        print(f"Optimization with Regularization: {alpha}")
+        losses, weights = optimize_score(
+            X, y, docking_cost, scoring_cost, reg=alpha, iter=iter
+        )
         min_loss_idx = np.argmin(losses)
         best_weights[alpha] = weights[min_loss_idx]
     np.save(str(weights_path), best_weights)
@@ -253,10 +264,8 @@ def score_pose_optimization(
 
 
 def mapping_normalized_weights(
-        best_weights : np.array, 
-        scoring_tools : list, 
-        docking_tools : list
-        ) -> dict:
+    best_weights: np.array, scoring_tools: list, docking_tools: list
+) -> dict:
     """
     Map the normalized weights of the optimization function to the scoring functions and docking tools
 
@@ -271,11 +280,7 @@ def mapping_normalized_weights(
     all_tools = scoring_tools + docking_tools
 
     # Map weights to their corresponding tools
-    mapped_weights = {
-        tool: weight for tool,
-        weight in zip(
-            all_tools,
-            best_weights)}
+    mapped_weights = {tool: weight for tool, weight in zip(all_tools, best_weights)}
 
     # Normalize docking tools weights
     docking_weights = {tool: mapped_weights[tool] for tool in docking_tools}
@@ -296,8 +301,6 @@ def mapping_normalized_weights(
     }
 
     # Combine normalized weights back into one dictionary
-    normalized_weights = {
-        **normalized_docking_weights,
-        **normalized_scoring_weights}
+    normalized_weights = {**normalized_docking_weights, **normalized_scoring_weights}
 
     return normalized_weights

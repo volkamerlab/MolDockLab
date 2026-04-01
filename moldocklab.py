@@ -1,5 +1,6 @@
 import os
 import ast
+import shutil
 import logging
 
 import numpy as np
@@ -24,11 +25,6 @@ from src.preprocessing import (
 #    hdbscan_scaffold_split, 
 #    cv_split, 
     norm_scores
-    )
-from src.pose_score_optimization import (
-    scores_preprocessing, 
-    score_pose_optimization, 
-    mapping_normalized_weights
     )
 from src.interaction_analysis import (
     split_sdf_path, 
@@ -58,8 +54,7 @@ ALLOWED_SCORING_FUNCTIONS = ['cnnscore',
 ALLOWED_RANKING_METHODS = [
     'ecr',
     'rank_by_rank',
-    'zscore',
-    'weighted_ecr'
+    'zscore'
 ]
 
 def validate_docking_programs(programs):
@@ -132,11 +127,10 @@ def get_parser():
     parser.add_argument(
         '--ranking_method', 
         nargs='+', 
-        default=['ecr', 'rank_by_rank', 'zscore', 'weighted_ecr'], 
+        default=['ecr', 'rank_by_rank', 'zscore'], 
         type=str,
         help=f"The ranking method to use. Allowed values: {', '.join(ALLOWED_RANKING_METHODS)}"
     )
-    parser.add_argument('--runtime_reg', nargs='+', type=float, default=[0.0], help='Regularization parameter for the runtime cost for each tool in pose score optimization. It can be list of floats or a float')
     
     # selecting best balanced pipeline args
     parser.add_argument('--corr_range', type=float, default=0.1, help='The allowed range of the Spearman correlation to select a pipeline with lowest runtime cost')
@@ -276,50 +270,16 @@ def main(args):
     if 'all' in args.ranking_method:
         args.ranking_method = ALLOWED_RANKING_METHODS
 
-    if 'weighted_ecr' in args.ranking_method:
-        try:
-            logger.info("🔷 Performing the pose score optimization for experimentally validated ligands ⏳")
-            X, y, docking_cost, scoring_cost, docking_tools, scoring_tools = scores_preprocessing(
-                df_rescored_merged)
-            if isinstance(args.runtime_reg, float):
-                alphas = [args.runtime_reg]
-            else:
-                alphas = args.runtime_reg
-            mapped_normalized_weights_w_alphas = {}
-            best_weights = score_pose_optimization(
-                X=X,
-                y=y, 
-                docking_cost=docking_cost, 
-                scoring_cost=scoring_cost, 
-                weights_path= OUTPUT / 'best_weights.pkl.npy', 
-                alphas=alphas, 
-                )
-            for alpha in alphas:
-                normalized_weights = mapping_normalized_weights(best_weights[alpha], scoring_tools, docking_tools)
-                mapped_normalized_weights_w_alphas[alpha] = normalized_weights
-            logger.info(f"✅ Best weights are saved at {HERE / 'test_data/best_weights.pkl.npy'}")
-        except Exception as e:
-            logger.error(f"❗An error occured while performing the pose score optimization: {e}")
-            return
         
     try:
         logger.info(f"🔷 Ranking the experimentally validated ligands library selecting {args.ranking_method}⏳")
         df_rescored_norm = norm_scores(df_rescored_merged)
-        if normalized_weights is None:
-            poses_ranking(
+        poses_ranking(
             ranking_methods=args.ranking_method,
             df_rescored=df_rescored_norm,
             output_path=OUTPUT,
             ncpus=args.n_cpus
-            )
-        else:
-            poses_ranking(
-            ranking_methods=args.ranking_method,
-            df_rescored=df_rescored_norm,
-            output_path=OUTPUT,
-            mapped_weights=mapped_normalized_weights_w_alphas,
-            ncpus=args.n_cpus
-            )
+        )
         logger.info(f"✅ Ranked ligands are saved at {OUTPUT / 'correlations_general' /  'all_ranked.csv'}")
     except Exception as e:
         logger.error(f"❗An error occured while ranking the ligands library: {e}")
@@ -405,30 +365,21 @@ def main(args):
         return
 
     logger.info(f"🔷 Ranking unknown poses using {selected_ranking_method} ...")
-    ranking_methods_dict = {  
-        'ecr' : exponential_consensus_ranking, 
+    ranking_methods_dict = {
+        'ecr' : exponential_consensus_ranking,
         'rank_by_rank' : rank_by_rank,
-        'zscore': Zscore,
-        'weighted_ecr': weighted_ECR
+        'zscore': Zscore
         }
     
     try:
         rescored_df_sbvs = pd.read_csv(larger_data_output / 'rescoring_results' / 'all_rescoring_results.csv')
         rescored_df_sbvs_norm = norm_scores(rescored_df_sbvs)
-        if selected_ranking_method == 'weighted_ecr':
-            ranked_sbvs_ligands = ranking_methods_dict[selected_ranking_method](
-                df=rescored_df_sbvs_norm,
-                selected_scores=selected_sfs,
-                id_column=args.id_col,
-                mapped_weights= normalized_weights,
-                )
-        else:
-            ranked_sbvs_ligands = ranking_methods_dict[selected_ranking_method](
-                df=rescored_df_sbvs_norm, 
-                selected_scores=selected_sfs,
-                id_column=args.id_col,
-                weight=0.05,
-                )
+        ranked_sbvs_ligands = ranking_methods_dict[selected_ranking_method](
+            df=rescored_df_sbvs_norm,
+            selected_scores=selected_sfs,
+            id_column=args.id_col,
+            weight=0.05
+        )
         ranked_sbvs_ligands.sort_values(by=selected_ranking_method, ascending=False, inplace=True)
         ranked_sbvs_ligands.rename(columns={'ID': 'full_ID'}, inplace=True)
         ranked_sbvs_ligands['ID'] = ranked_sbvs_ligands.full_ID.str.split('_').str[0]
@@ -464,7 +415,17 @@ def main(args):
                     )
                 aggregated_interx_fp = aggregate_interactions(mols_interx_fp)
                 aggregated_interx_fp.to_csv(interx_csv, index_label='residues')
-                
+
+                # Clean up split SDF directory after interaction analysis
+                if actives_paths:
+                    split_dir = actives_paths[0].parent
+                    try:
+                        if split_dir.exists() and split_dir.name != 'rescoring_results':
+                            shutil.rmtree(split_dir)
+                            logger.info(f"🧹 Cleaned up split SDF directory: {split_dir}")
+                    except OSError as e:
+                        logger.warning(f"Could not remove split directory {split_dir}: {e}")
+
             logger.info(f"✅ Protein-ligand interactions are saved at {interx_csv}")
             fp_interx = pd.read_csv(interx_csv)
             aggregated_df = fp_interx.groupby('residue', as_index=False)['count'].sum().sort_values(by='count', ascending=False)
@@ -493,6 +454,16 @@ def main(args):
                                     )
                 allposes_interaction_fp.to_csv(larger_data_output / 'allposes_interaction_fps.csv', index=False)
                 logger.info(f"✅ PLIP interactions are saved at {larger_data_output / 'allposes_interaction_fps.csv'}")
+
+                # Clean up split SDF directory after virtual screening interaction analysis
+                if ligands_paths:
+                    split_dir = ligands_paths[0].parent
+                    try:
+                        if split_dir.exists() and split_dir.name.startswith('allposes'):
+                            shutil.rmtree(split_dir)
+                            logger.info(f"🧹 Cleaned up virtual screening split SDF directory: {split_dir}")
+                    except OSError as e:
+                        logger.warning(f"Could not remove split directory {split_dir}: {e}")
             allposes_fp_interx = pd.read_csv(larger_data_output / 'allposes_interaction_fps.csv')
             # filtering the compounds with key interactions at any pose
             allposes_interaction_fp['ID'] = [str(idx).split('_')[0] for idx in allposes_interaction_fp.index]

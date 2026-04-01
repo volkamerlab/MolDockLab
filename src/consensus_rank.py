@@ -29,7 +29,7 @@ def exponential_consensus_ranking(
     sigma = weight * len(df)
     for col in selected_scores:
         df.loc[:, col] = df.loc[:, col].rank(method='min', ascending=False)
-        df.loc[:, col] = (np.exp(-(df.loc[:, col] / sigma)) / sigma)    
+        df.loc[:, col] = (np.exp(-(df.loc[:, col] / sigma)) / sigma) * 1000   
     df[f'exponential_consensus_ranking'] = df[selected_scores].sum(axis=1, numeric_only=True)
     df2 = df.sort_values(
         f'exponential_consensus_ranking',
@@ -297,19 +297,36 @@ def weighted_ECR(
     if 'docking_tool' not in df.columns:
         df['docking_tool'] = df[id_column].str.split('_').str[1]
     # docking_tools_sigma = np.mean([mapped_weights[d] for d in df.docking_tool.unique()])
+    df[ranking_method_name] = 0.0
+
     try:
+        # for col in selected_scores:
+        #     for docking_tool in df.docking_tool.unique():
+        #         mask = df['docking_tool'] == docking_tool
+        #         # print(docking_tool, len(df[mask]))
+        #         sigma = mapped_weights[col] * mapped_weights[docking_tool] * len(df[mask])
+                
+        #         # if sigma <= 0.01:
+        #         #     sigma = 0.01
+        #         #     continue
+        #         df.loc[mask, col] = df.loc[mask, col].rank(method='min', ascending=False)
+        #         df.loc[mask, col] = np.exp(-(df.loc[mask, col] / sigma)) / sigma
+        
         for col in selected_scores:
             for docking_tool in df.docking_tool.unique():
                 mask = df['docking_tool'] == docking_tool
-                # print(docking_tool, len(df[mask]))
-                sigma = mapped_weights[col] * mapped_weights[docking_tool] * len(df[mask])
+                N = mask.sum()
                 
-                # if sigma <= 0.01:
-                #     sigma = 0.01
-                #     continue
-                df.loc[mask, col] = df.loc[mask, col].rank(method='min', ascending=False)
-                df.loc[mask, col] = np.exp(-(df.loc[mask, col] / sigma)) / sigma
-        df[ranking_method_name] = df[selected_scores].sum(axis=1, numeric_only=True)
+                # standard sigma: fraction of population size
+                sigma = N * 0.05  # or parameterize this fraction
+                
+                # apply weighting as a multiplicative factor on the
+                # final score, NOT inside sigma
+                w = mapped_weights[col] * mapped_weights[docking_tool]
+                
+                ranks = df.loc[mask, col].rank(method='min', ascending=False)
+                df.loc[mask, ranking_method_name] += w * (np.exp(-ranks / sigma) / sigma)
+        # df[ranking_method_name] = df[selected_scores].sum(axis=1, numeric_only=True)
     except KeyError:
         print('The weights are not mapped for the selected columns')
         return None

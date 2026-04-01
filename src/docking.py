@@ -283,8 +283,9 @@ def _plants_docking(
         )
     # get pocket coordinates
     center_x, center_y, center_z, radius = pocket_coordinates_generation(
-        protein_mol2, 
-        ref_ligand_mol2, 
+        protein_mol2,
+        ref_ligand_mol2,
+        software_path=Path('software'),
         pocket_coordinates_path='bindingsite.def'
         )
     # print(f"Center of the pocket is: {center_x}, {center_y}, {center_z} with radius of {radius}")

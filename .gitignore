@@ -7,9 +7,11 @@ software
 data
 consensus_methods.py
 DockM8/
+egfr_data/results/screening_set_results/diffdock/*
+results/*
 # C extensions
 *.so
-
+*.zip
 # Distribution / packaging
 .Python
 build/

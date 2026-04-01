@@ -11,7 +11,7 @@ from rdkit.Chem.Scaffolds import MurckoScaffold
 from sklearn.preprocessing import RobustScaler
 from rdkit.Chem.rdFingerprintGenerator import GetMorganGenerator
 
-from src.utilities import handling_multicollinearity, run_command
+from .utilities import handling_multicollinearity, run_command
 
 
 def   merge_activity_values(
@@ -50,8 +50,8 @@ def   merge_activity_values(
             continue
     
     df_rescored[['id', 'docking_tool', 'pose']] = df_rescored[scored_id_col].str.split('_', expand=True)
-    true_values_df = PandasTools.LoadSDF(str(mols_true_value_path)).rename(columns={true_value_idcol: 'id'})    
-    df_merged = df_rescored.merge(true_values_df[['id', true_value_col, activity_col]], on='id', how='left')
+    true_values_df = PandasTools.LoadSDF(str(mols_true_value_path)).rename(columns={true_value_idcol: 'id'})
+    df_merged = df_rescored.merge(true_values_df[['id', true_value_col, activity_col]], on='id', how='left', validate="m:1")
     if lower_better_true_value:
         df_merged.loc[:,true_value_col] = df_merged.loc[:,true_value_col] * -1
     df_merged.drop(['pose'], axis=1, inplace=True)

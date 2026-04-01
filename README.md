@@ -103,12 +103,11 @@ Ranking Methods:
 
 --ranking_method          [RANKING_METHOD ...]
                           Consensus ranking methods to use. 
-                          Allowed consensus methods: best_ECR, ECR_average, average_ECR, 
-                          rank_by_rank, rank_by_vote, rank_by_number, best_Zscore, 
-                          average_Zscore, weighted_ECR
-                          Example: --ranking_method best_ECR weighted_ECR
---runtime_reg (=0.1)      Regularization parameter for runtime cost in pose score 
-                          optimization.
+                          Allowed consensus methods: ecr,
+                          rank_by_rank, zscore
+                          
+                          Example: --ranking_method ecr zscore rank_by_rank
+
 
 
 Pipeline Selection:
@@ -131,7 +130,7 @@ Interaction Analysis:
 
 Diversity Selection:
 
---n_clusters (=5)         Number of clusters/compounds to select in diversity selection.
+--n_clusters (=10)         Number of clusters/compounds to select in diversity selection.
 
 
 Quality Checking:

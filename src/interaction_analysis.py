@@ -17,7 +17,7 @@ from plip.structure.preparation import PDBComplex
 from src.utilities import run_command
 
 
-def plipify_fp_interaction(
+def plip_fp_interaction(
         ligands_path:Path,
         protein_path:Path,
         output_file:Path
@@ -51,6 +51,26 @@ def plipify_fp_interaction(
         for ligand_pdb in ligand_pdb_paths
     ]
     mols_interx_fp = interaction_fp_generator(ligand_protein_cpx_paths, output_file)
+
+    # Clean up temporary ligand-protein complex files
+    for cpx_path in ligand_protein_cpx_paths:
+        try:
+            if cpx_path.exists():
+                os.remove(cpx_path)
+                print(f"Cleaned up temporary complex file: {cpx_path}")
+        except OSError as e:
+            print(f"Warning: Could not remove temporary file {cpx_path}: {e}")
+
+    # Clean up ligand_protein_complex directory if empty
+    if ligand_protein_cpx_paths:
+        complex_dir = ligand_protein_cpx_paths[0].parent
+        try:
+            if complex_dir.exists() and not any(complex_dir.iterdir()):
+                complex_dir.rmdir()
+                print(f"Cleaned up empty directory: {complex_dir}")
+        except OSError:
+            pass  # Directory not empty or other issue
+
     return mols_interx_fp
 
 def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFrame:
@@ -79,7 +99,7 @@ def interaction_fp_generator(complex_path:Path, output_path:Path) -> pd.DataFram
             if resname not in interactions_dict[cpx.stem]:
                 interactions_dict[cpx.stem][resname] = []
             interactions_dict[cpx.stem][resname].append(interx_type)
-        os.remove(str(cpx))
+        # os.remove(str(cpx))
         os.remove(f'/tmp/{cpx.stem}_protonated.pdb')
         if  (i % 500 == 0 and i != 0) or i == len(complex_path) - 1:
             mols_interx_fp = pd.DataFrame(interactions_dict).T.fillna(0)
@@ -166,6 +186,15 @@ def _sdf2pdb_preprocessing(sdf_file:Path) -> Path:
     cmd.alter('HETATM', 'chain="E"')
     cmd.save(pdb_path)
     cmd.delete("all")
+
+    # Clean up the original SDF file after conversion
+    try:
+        if sdf_file.exists():
+            os.remove(sdf_file)
+            print(f"Cleaned up original SDF file: {sdf_file}")
+    except OSError as e:
+        print(f"Warning: Could not remove SDF file {sdf_file}: {e}")
+
     return pdb_path
 
     # load protein and ligand and save as pdb file

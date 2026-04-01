@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 
+from rdkit import Chem
 from pathlib import Path
 from rdkit.Chem import PandasTools
 from sklearn_extra.cluster import KMedoids
@@ -34,7 +35,23 @@ def diversity_selection(
         left_on='ID', 
         right_on=id_col
         )
-    print(merged_df)
+
+    # sulfonamide filtration
+    # sulfonamide_smarts = "S(=O)(=O)N"
+    # sulfonamide_pattern = Chem.MolFromSmarts(sulfonamide_smarts)
+    
+    # # Filter out compounds with sulfonamide groups
+    # merged_df['has_sulfonamide'] = merged_df['ROMol'].apply(lambda mol: mol.HasSubstructMatch(sulfonamide_pattern))
+    # merged_df = merged_df[~merged_df['has_sulfonamide']].drop(columns=['has_sulfonamide']).reset_index(drop=True)
+    
+    # nitro benzene fitration
+    # nitrobenzene_smarts = "c1ccc(cc1)[N+](=O)[O-]"
+    # nitrobenzene_pattern = Chem.MolFromSmarts(nitrobenzene_smarts)
+
+    # Filter out compounds with nitrobenzene groups
+    # merged_df['has_nitrobenzene'] = merged_df['ROMol'].apply(lambda mol: mol.HasSubstructMatch(nitrobenzene_pattern))
+    # merged_df = merged_df[~merged_df['has_nitrobenzene']].drop(columns=['has_nitrobenzene']).reset_index(drop=True)
+
     merged_df = merged_df[merged_df['passed_interx_filtration'] == 1].reset_index(drop=True)
     merged_df = merged_df.head(int(0.01*len(merged_df)))
     fps = np.array([np.array(list(get_fp(mol))) for mol in merged_df['ROMol']])

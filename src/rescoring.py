@@ -11,8 +11,8 @@ from pathlib import Path
 from rdkit.Chem import PandasTools
 from concurrent.futures import ProcessPoolExecutor
 
-from src.preprocessing import plants_preprocessing
-from src.utilities import (
+from .preprocessing import plants_preprocessing
+from .utilities import (
                     pdb_converter,
                     pocket_coordinates_generation, 
                     run_command, 
@@ -25,7 +25,8 @@ def rescoring_function(
     protein_path: Path,
     docked_library_path: Path,
     ref_file: Path,
-    ncpu: int
+    ncpu: int,
+    software_path: Path
 ):
     """
     This function is the high-level function to deploy all scoring functions. It takes the following arguments:
@@ -58,6 +59,7 @@ def rescoring_function(
     }
     # Create folder for rescoring results
     results_folder = docked_library_path.parent / 'rescoring_results'
+    print(f'Rescoring results will be saved in {results_folder}')
     results_folder.mkdir(exist_ok=True)
     num_cpus = ncpu
 
@@ -81,7 +83,7 @@ def rescoring_function(
 
         elif program in rescoring_dict.keys():
             # Run scoring functions in parellel
-
+            print(output_folder)
             print(f'Running {program} in parallel')
             # calculate the run time for each program
             start_time = time.time()
@@ -97,7 +99,8 @@ def rescoring_function(
                             protein_path,
                             file_path,
                             ref_file,
-                            output_folder / f'{program}_{i}.sdf'
+                            output_folder / f'{program}_{i}.sdf',
+                            software_path=software_path
                         )
                     )
                     for i, file_path in enumerate(splitted_file_paths)
@@ -117,6 +120,7 @@ def _ad4_rescoring(
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
+       software_path: Path,
 ) -> str:
     """
     This function for AD4 rescoring function and it takes the following arguments:
@@ -129,7 +133,7 @@ def _ad4_rescoring(
         The command to run the AD4 rescoring function
     """
     return (
-        './software/gnina'
+        f'{str(software_path)}/gnina'
         f' --receptor {protein_path}'
         f' --ligand {str(docked_library_path)}'
         f' --out {str(output_path)}'
@@ -144,6 +148,7 @@ def _smina_rescoring(
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
+       software_path: Path,
 ) -> str:
     """
     This function for SMINA rescoring function and it takes the following arguments:
@@ -160,7 +165,7 @@ def _smina_rescoring(
         return
     else:
         return (
-            './software/gnina'
+            f'{str(software_path)}/gnina'
             f' --receptor {protein_path}'
             f' --ligand {str(docked_library_path)}'
             f' --out {str(output_path)}'
@@ -175,6 +180,7 @@ def _gnina_score_rescoring(
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
+       software_path: Path,
 ) -> str:
     """
     This function for the score of GNINA rescoring function and it takes the following arguments:
@@ -191,7 +197,7 @@ def _gnina_score_rescoring(
         print(f'{output_path.name} is already excuted')
         return
     return (
-        './software/gnina'
+        f'{str(software_path)}/gnina'
         f' --receptor {str(protein_path)}'
         f' --ligand {str(docked_library_path)}'
         f' --out {str(output_path)}'
@@ -206,6 +212,7 @@ def _gnina_affinity_rescoring(
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
+       software_path: Path,
 ) -> str:
     """
     This function for GNINA rescoring function and it takes the following arguments:
@@ -218,7 +225,7 @@ def _gnina_affinity_rescoring(
         The command to run the GNINA rescoring function
     """
     return (
-        './software/gnina'
+        f'{str(software_path)}/gnina'
         f' --receptor {str(protein_path)}'
         f' --ligand {str(docked_library_path)}'
         f' --out {str(output_path)}'
@@ -233,6 +240,7 @@ def _vinardo_rescoring(
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
+       software_path: Path,
 ) -> str:
     """
     This function for Vinardo rescoring function and it takes the following arguments:
@@ -245,7 +253,7 @@ def _vinardo_rescoring(
         The command to run the Vinardo rescoring function
     """
     return (
-        './software/gnina'
+        f'{str(software_path)}/gnina'
         f' --receptor {protein_path}'
         f' --ligand {str(docked_library_path)}'
         f' --out {str(output_path)}'
@@ -260,6 +268,7 @@ def _chemplp_rescoring(
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
+       software_path: Path,
 ) -> str:
     """
     This function for CHEMPLP rescoring function and it takes the following arguments:
@@ -271,18 +280,17 @@ def _chemplp_rescoring(
     Returns:
         The command to run the CHEMPLP rescoring function
     """
-    plants_search_speed = 'speed1'
     ants = '20'
 
     protein_mol2, mols_library_mol2, ref_ligand_mol2 = plants_preprocessing(
         protein_path, docked_library_path, ref_file)
     center_x, center_y, center_z, radius = pocket_coordinates_generation(
-        protein_mol2, ref_ligand_mol2, pocket_coordinates_path='bindingsite.def')
+        protein_mol2, ref_ligand_mol2, pocket_coordinates_path='bindingsite.def', software_path=software_path)
     print(f"Center of the pocket is: {center_x}, {center_y}, {center_z} with radius of {radius}")
 
     chemplp_config = [
         '# search algorithm\n',
-        f'search_speed {plants_search_speed}\n',
+        f'search_speed speed1\n',
         f'aco_ants {ants}\n',
         'flip_amide_bonds 0\n',
         'flip_planar_n 1\n',
@@ -327,7 +335,7 @@ def _chemplp_rescoring(
         configwriter.writelines(chemplp_config)
 
     # Run PLANTS docking
-    return f'./software/PLANTS --mode rescore {str(chemplp_rescoring_config_path_config)}'
+    return f'{str(software_path)}/PLANTS --mode rescore {str(chemplp_rescoring_config_path_config)}'
 
 
 def _linf9_rescoring(
@@ -335,6 +343,7 @@ def _linf9_rescoring(
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
+       software_path: Path,
 ) -> str:
     """
     This function for LinF9 rescoring function and it takes the following arguments:
@@ -347,7 +356,7 @@ def _linf9_rescoring(
         The command to run the LinF9 rescoring function
     """
     return (
-        f'./software/smina.static'
+        f'{str(software_path)}/smina.static'
         f' --receptor {str(protein_path)}'
         f' --ligand {str(docked_library_path)}'
         f' --out {str(output_path)}'
@@ -361,6 +370,7 @@ def _rtmscore_rescoring(
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
+       software_path: Path,
 ):
     """
     This function for RTMScore rescoring function and it takes the following arguments:
@@ -378,7 +388,7 @@ def _rtmscore_rescoring(
     if not os.path.exists(RTMScore_pocket):
         print('Pocket is not found, generating the pocket first and rescore')
         return (
-            f'python software/RTMScore/example/rtmscore.py'
+            f'python {str(software_path)}/RTMScore/example/rtmscore.py'
             f' -p {str(protein_path)}'
             f' -l {str(docked_library_path)}'
             f' -rl {str(ref_file)}'
@@ -388,11 +398,11 @@ def _rtmscore_rescoring(
             ' -m software/RTMScore/trained_models/rtmscore_model1.pth'
         )
     return (
-        f'python software/RTMScore/example/rtmscore.py'
+        f'python {str(software_path)}/RTMScore/example/rtmscore.py'
         f' -p {str(RTMScore_pocket)}'
         f' -l {str(docked_library_path)}'
         f' -o {str(output_path.parent / f"rtmscore_{number_of_ligand}")}'
-        ' -m software/RTMScore/trained_models/rtmscore_model1.pth'
+        f' -m {str(software_path)}/RTMScore/trained_models/rtmscore_model1.pth'
     )
 
 
@@ -401,6 +411,7 @@ def _scorch_rescoring(
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
+       software_path: Path,
 ):
     """
     This function for SCORCH rescoring function and it takes the following arguments:
@@ -441,6 +452,7 @@ def _rfscore_V1_rescoring(
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
+       software_path: Path,
 ):
     """
     This function for RFScore_ver1 rescoring function and it takes the following arguments:
@@ -466,6 +478,7 @@ def _hyde_rescoring(
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
+       software_path: Path,
 ):
     """
     This function for HYDE rescoring function and it takes the following arguments:
@@ -484,7 +497,7 @@ def _hyde_rescoring(
             pdb_to_sdf = f'obabel {str(ref_file.parent / ref_file.stem)}.pdb -O {str(ref_file)}'
             subprocess.run(pdb_to_sdf, shell=True)
     return (
-        "software/hydescorer-2.0.0/hydescorer"
+        f"{str(software_path)}/hydescorer-2.0.0/hydescorer"
         f" -i {str(docked_library_path)}"
         f" -o {str(output_path)}"
         f" -p {str(protein_path)}"
@@ -497,6 +510,7 @@ def _rfscore_V2_rescoring(
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
+       software_path: Path,
 ):
     """
     This function for RFscorevs_V2 rescoring rescoring function and it takes the following arguments:
@@ -521,6 +535,7 @@ def _rfscore_v3_rescoring(
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
+       software_path: Path,
 ):
     """
     This function for RFscorevs_V3 rescoring rescoring function and it takes the following arguments:
@@ -545,6 +560,7 @@ def _vina_hydrophobic_rescoring(
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
+       software_path: Path,
 ):
     """
     This function for Vina Hydrophobic rescoring function and it takes the following arguments:
@@ -574,6 +590,7 @@ def _vina_intra_hydrophobic_rescoring(
         docked_library_path: Path,
         ref_file: Path,
         output_path: Path,
+       software_path: Path,
 ):
     """
     This function for Vina Intra Hydrophobic rescoring function and it takes the following arguments:
@@ -652,15 +669,14 @@ def _read_rescoring_results(
     print('\n\nReading rescoring results ⌛ ...\n\n')
 
     try:
-        if f'{rescore_program}_rescoring.csv' in os.listdir(
-                rescoring_results_path):
+        if f'{rescore_program}_rescoring.csv' in os.listdir(rescoring_results_path):
             print(f'{rescore_program} is already read')
             return
 
         if rescore_program in ['cnnscore', 'cnnaffinity', 'smina_affinity']:
-            for path in ['cnnscore', 'cnnaffinity', 'smina_affinity']:
-                rescore_path = rescoring_results_path / path
-                if os.path.exists(rescore_path):
+            for sf in ['cnnscore', 'cnnaffinity', 'smina_affinity']:
+                rescore_path = rescoring_results_path / sf
+                if rescore_path.is_dir():
                     if (rescore_path / f'{rescore_program}_rescoring.csv').is_file():
                         break
 
@@ -761,6 +777,9 @@ def _read_rescoring_results(
                     inplace=True)
                 df['Pose ID'] = df['Pose ID'].str.split('_').str[0:3].str.join('_')
                 df.rename(columns={'Pose ID': 'ID'}, inplace=True)
+                # if in the column of the ID contains _entry, then remove it and everything after it
+                df['ID'] = df['ID'].str.split('_entry').str[0]
+
                 dfs.append(df)
 
         if 'scorch' == rescore_program:
@@ -782,6 +801,10 @@ def _read_rescoring_results(
                 dfs.append(df)
 
         csv_file = pd.concat(dfs, ignore_index=True)
+        csv_file['ID'] = csv_file['ID'].astype(str)
+        csv_file.drop_duplicates(subset='ID', inplace=True)
+        csv_file = csv_file.loc[:, ~csv_file.columns.duplicated()]
+
         csv_file.to_csv(
             rescoring_results_path /
             rescore_program /
@@ -816,17 +839,17 @@ def _merge_rescoring_results(
                 str(
                     rescoring_results_path /
                     rescore_program /
-                    f'{rescore_program}_rescoring.csv')).drop_duplicates(
-                subset="ID")
+                    f'{rescore_program}_rescoring.csv')
+                )
+            df['ID'] = df['ID'].astype(str)
             all_rescoring_dfs.append(df)
         else:
             print(f'{rescore_program} is not excuted')
             return
-
+    print(all_rescoring_dfs)
     merged_df = all_rescoring_dfs[0]
     for df in all_rescoring_dfs[1:]:
-
-        merged_df = pd.merge(merged_df, df, on='ID', how='outer')
+        merged_df = pd.merge(merged_df, df, on='ID', how='inner')
     merged_df.drop_duplicates(subset='ID', inplace=True)
     merged_df.to_csv(
         rescoring_results_path /

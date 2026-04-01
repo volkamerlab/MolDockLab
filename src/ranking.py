@@ -87,12 +87,11 @@ def enrichment_factor_calc(
         return quotient / divisor
 
 def _process_combination(
-                splitted_comb: list, 
-                df_rescored: pd.DataFrame, 
+                splitted_comb: list,
+                df_rescored: pd.DataFrame,
                 ranking_method: str,
                 output_path: Path,
-                index: int,
-                mapped_weights: dict
+                index: int
         ):
         """
         Rank poses using different ranking methods
@@ -104,7 +103,6 @@ def _process_combination(
                 ranking_method(str): ranking method
                 output_path(pathlib.Path): path to output folder
                 index(int): index of the splitted_comb
-                mapped_weights(dict): dict of different alphas of weights for weighted ECR ranking method
         Return: 
                 Write the results of every ranking method to a csv file
         """
@@ -128,22 +126,13 @@ def _process_combination(
                 ranking_method_name = ranking_method
         for i, comb in enumerate(splitted_comb):
                 filtered_df = df[df['docking_tool'].isin(list(comb[0]))]
-                try:    
-                        if ranking_method.startswith('weighted_ecr'):
-                                df_rank = weighted_ECR(
-                                df=filtered_df.copy(),
-                                mapped_weights=mapped_weights[float(ranking_method_name.split('_')[-1])],
-                                selected_scores=list(comb[1]), 
-                                id_column='ID',
-                                ranking_method_name=ranking_method_name
+                try:
+                        df_rank = ranking_methods_dict[ranking_method](
+                                filtered_df.copy(),
+                                0.05,
+                                list(comb[1]),
+                                id_column='ID'
                                 )
-                        else:
-                                df_rank = ranking_methods_dict[ranking_method](
-                                        filtered_df.copy(), 
-                                        0.05, 
-                                        list(comb[1]), 
-                                        id_column='ID'
-                                        )
                 except(RuntimeError, TypeError, NameError, pd.errors.MergeError, KeyError) as err:
                         print(f"Error in ranking the scores: {err}")
                 try:
@@ -174,7 +163,6 @@ def _process_combination(
                                         df_rank_copy.loc[:, ranking_method_name], 
                                         df_rank_copy['true_value']
                                         )
-
                         ef = enrichment_factor_calc(
                                 df_unique_sorted, 
                                 percent=10, 
@@ -208,7 +196,6 @@ def poses_ranking(
         df_rescored: pd.DataFrame,
         output_path: Path,
         validation: str ="general",
-        mapped_weights: dict =None,
         ncpus: int = 4
         ):
         """
@@ -240,10 +227,6 @@ def poses_ranking(
         corr_file_path = output_path / f'correlations'
         if validation:
                 corr_file_path = output_path / f'correlations_{validation}'
-        # put if condition if the dict is not empty
-        if 'weighted_ecr' in ranking_methods:
-                ranking_methods.remove('weighted_ecr')
-                ranking_methods.extend([f'weighted_ecr_{alpha}' for alpha in mapped_weights.keys()])
 
         corr_file_path.mkdir(parents=True, exist_ok=True)
         for ranking_method in ranking_methods:
@@ -260,7 +243,7 @@ def poses_ranking(
                 with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
                         futures = [
                         executor.submit(
-                                _process_combination, comb, df_rescored, ranking_method, corr_file_path, i, mapped_weights
+                                _process_combination, comb, df_rescored, ranking_method, corr_file_path, i
                         ) for i, comb in enumerate(splitted_comb)
                         ]
                 #concatenate all the results

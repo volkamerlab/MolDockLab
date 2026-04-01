@@ -1,12 +1,15 @@
 import os
 import ast
 import csv
+import shutil
 import subprocess
 import requests
 import zipfile
+import logging
 import pandas as pd
 
 from pathlib import Path
+from typing import Union, List
 from IPython import get_ipython
 
 from rdkit import Chem
@@ -26,8 +29,8 @@ def run_command(cmd: str):
         try:
             subprocess.call(cmd,
                             shell=True,
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.STDOUT
+                            # stdout=subprocess.DEVNULL,
+                            # stderr=subprocess.STDOUT
                             )
         except subprocess.CalledProcessError as e:
             print(e)
@@ -51,7 +54,7 @@ def run_command(cmd: str):
             print(f'Error occured while running {cmd}')
             return False
 
-def _plants_pocket_generation(protein_file_mol2: Path, ref_file_mol2: Path):
+def _plants_pocket_generation(protein_file_mol2: Path, ref_file_mol2: Path, software_path: Path):
     """
     This function generates the pocket coordinates of the protein file
 
@@ -59,14 +62,15 @@ def _plants_pocket_generation(protein_file_mol2: Path, ref_file_mol2: Path):
         protein_file_mol2(pathlib.Path): protein file in mol2 format
         ref_file_mol2(pathlib.Path): reference file in mol2 format
     """
-    plants_pocket_cmd = f"./software/PLANTS --mode bind {str(ref_file_mol2)} {str(protein_file_mol2)}"
+    plants_pocket_cmd = f"{str(software_path)}/PLANTS --mode bind {str(ref_file_mol2)} {str(protein_file_mol2)}"
     run_command(plants_pocket_cmd)
     print('PLANTS bind mode is executed.')
 
 def pocket_coordinates_generation(
         protein_mol2: Path,
         ref_file_mol2: Path,
-        pocket_coordinates_path : str ='bindingsite.def'
+        software_path: Path,
+        pocket_coordinates_path : str ='bindingsite.def',
         ):
     """
     This function generates the pocket coordinates of the protein file and 
@@ -85,7 +89,7 @@ def pocket_coordinates_generation(
                - center_z (float): z coordinate of the pocket center.
                - radius (float): radius of the pocket.
     """
-    _plants_pocket_generation(protein_mol2, ref_file_mol2)
+    _plants_pocket_generation(protein_mol2, ref_file_mol2, software_path)
 
     # Open and read the file
     with open(Path.cwd() / pocket_coordinates_path, 'r') as file:
@@ -351,17 +355,20 @@ def handling_multicollinearity(
     """
 
     corr_matrix = _generate_correlation_matrix(df)
-    # display(corr_matrix.style.background_gradient(cmap='coolwarm'))
     pairs = check_correlation_pairs(corr_matrix, threshold)
     columns_to_remove = set()
     for col1, col2 in pairs:
-
+        print(corr_matrix.loc[true_value_col, col1])
+        print(corr_matrix.loc[true_value_col, col2])
         corr_with_true_value_col1 = corr_matrix.loc[true_value_col, col1]
         corr_with_true_value_col2 = corr_matrix.loc[true_value_col, col2]
         if corr_with_true_value_col1 > corr_with_true_value_col2:
             columns_to_remove.add(col2)
-        else:
+            print(f"Column {col1} is more correlated with the true value than {col2}.")
+
+        elif corr_with_true_value_col1 <= corr_with_true_value_col2:
             columns_to_remove.add(col1)
+            print(f"Column {col1} is more correlated with the true value than {col2}.")
     print(f"Scores of {columns_to_remove} were found to highly correlate. Therefore, they are removed.")
     return columns_to_remove
 

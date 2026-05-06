@@ -59,7 +59,6 @@ def rescoring_function(
     }
     # Create folder for rescoring results
     results_folder = docked_library_path.parent / 'rescoring_results'
-    print(f'Rescoring results will be saved in {results_folder}')
     results_folder.mkdir(exist_ok=True)
     num_cpus = ncpu
 
@@ -83,7 +82,7 @@ def rescoring_function(
 
         elif program in rescoring_dict.keys():
             # Run scoring functions in parellel
-            print(output_folder)
+
             print(f'Running {program} in parallel')
             # calculate the run time for each program
             start_time = time.time()
@@ -846,7 +845,7 @@ def _merge_rescoring_results(
         else:
             print(f'{rescore_program} is not excuted')
             return
-    print(all_rescoring_dfs)
+
     merged_df = all_rescoring_dfs[0]
     for df in all_rescoring_dfs[1:]:
         merged_df = pd.merge(merged_df, df, on='ID', how='inner')

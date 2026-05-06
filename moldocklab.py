@@ -142,7 +142,7 @@ def get_parser():
 
     # diversity selection args
     parser.add_argument('--diversity_selection', action='store_true', help='Whether to use diversity selection step or not')
-    parser.add_argument('--n_clusters', type=int, default=5, help='The number of clusters that the centroids (central compounds) are selected in the diversity selection step')
+    parser.add_argument('--n_clusters', type=int, default=10, help='The number of clusters that the centroids (central compounds) are selected in the diversity selection step')
 
     # Quality checker args
     parser.add_argument('--pose_quality_checker', action='store_true', help='Whether to use pose quality checker for generated poses using PoseBusters')

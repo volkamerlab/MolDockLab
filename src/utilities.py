@@ -1,15 +1,12 @@
 import os
 import ast
 import csv
-import shutil
 import subprocess
 import requests
 import zipfile
-import logging
 import pandas as pd
 
 from pathlib import Path
-from typing import Union, List
 from IPython import get_ipython
 
 from rdkit import Chem
@@ -29,8 +26,8 @@ def run_command(cmd: str):
         try:
             subprocess.call(cmd,
                             shell=True,
-                            # stdout=subprocess.DEVNULL,
-                            # stderr=subprocess.STDOUT
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.STDOUT
                             )
         except subprocess.CalledProcessError as e:
             print(e)
@@ -358,18 +355,14 @@ def handling_multicollinearity(
     pairs = check_correlation_pairs(corr_matrix, threshold)
     columns_to_remove = set()
     for col1, col2 in pairs:
-        print(corr_matrix.loc[true_value_col, col1])
-        print(corr_matrix.loc[true_value_col, col2])
+
         corr_with_true_value_col1 = corr_matrix.loc[true_value_col, col1]
         corr_with_true_value_col2 = corr_matrix.loc[true_value_col, col2]
         if corr_with_true_value_col1 > corr_with_true_value_col2:
             columns_to_remove.add(col2)
-            print(f"Column {col1} is more correlated with the true value than {col2}.")
-
-        elif corr_with_true_value_col1 <= corr_with_true_value_col2:
+        else:
             columns_to_remove.add(col1)
-            print(f"Column {col1} is more correlated with the true value than {col2}.")
-    print(f"Scores of {columns_to_remove} were found to highly correlate. Therefore, they are removed.")
+    # print(f"Scores of {columns_to_remove} were found to highly correlate. Therefore, they are removed.")
     return columns_to_remove
 
 def split_list(input_list : list, num_splits : int) -> list:

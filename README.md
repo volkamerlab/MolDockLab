@@ -38,6 +38,8 @@ bash ./setup_py310.sh
 ```
 Thanks to the [DockM8](https://github.com/DrugBud-Suite/DockM8/blob/main/), the environment was adapted to meet the needs of **MolDockLab**. For more details or for running on windows, please refer to the [installation guide of DockM8](https://github.com/DrugBud-Suite/DockM8/blob/main/DockM8_Installation_Guide.pdf).
 
+The script downloads the third-party docking tools and scoring functions (gnina, smina, DiffDock, Gypsum-DL, SCORCH, RTMScore, ...) into a `software/` directory inside the MolDockLab folder. This directory has to be given to the workflow through the required `--software_path` argument, so the tools can also be kept in any other location (e.g. a shared installation outside the repository).
+
 ---
 ## Usage
 
@@ -46,7 +48,7 @@ Thanks to the [DockM8](https://github.com/DrugBud-Suite/DockM8/blob/main/), the 
 To execute the workflow, run the `moldocklab.py` script with your desired parameters. Make sure your input data is ready. You can also use the provided test data in `test_data/` for smaller-scale testing. For reproducibility, the following command can be used with the test data:
 
 ```
-python moldocklab.py --protein_path test_data/5UG9_noligand_protoss.pdb --ref_ligand_path test_data/ref_ligand.pdb --known_ligands_path test_data/test_three_cpds.sdf --sbvs_ligands_path test_data/test_library_10_cpds.sdf --out_dir test_output --true_value_col true_value --docking_programs gnina smina diffdock plants --pose_quality_checker --runtime_reg 0 5 40
+python moldocklab.py --protein_path test_data/5UG9_noligand_protoss.pdb --ref_ligand_path test_data/ref_ligand.pdb --known_ligands_path test_data/test_three_cpds.sdf --sbvs_ligands_path test_data/test_library_10_cpds.sdf --software_path software --out_dir test_output --true_value_col true_value --docking_programs gnina smina diffdock plants --pose_quality_checker
 ```
 For step-by-step tutorial, the steps in `test_run.ipynb` can be followed.
 
@@ -63,6 +65,10 @@ Required args:
 --known_ligands_path      Path to the experimentally validated ligands library.
 --true_value_col          Column name of the true activity values in the 
                           experimentally validated ligands library.
+--software_path           Path to the directory holding the third-party docking tools and
+                          scoring functions (gnina, PLANTS, DiffDock, gypsum_dl, SCORCH,
+                          RTMScore, ...), as installed by setup_py310.sh. Both relative
+                          and absolute paths are accepted, e.g. "software".
 
 
 Optional args:
@@ -70,7 +76,6 @@ Optional args:
 --sbvs_ligands_path       Path to the ligand library for larger SBVS.
 --activity_col            Column name for the activity class (default: "activity_class").
 --id_col                  Column name for the ligand ID (default: "ID").
---protein_name            Protein name for documentation (optional).
 --n_cpus (=1)             Number of CPUs to use for rescoring and ranking.
 --out_dir                 Directory to save results (default: "output").
 --verbose                 For detailed output.

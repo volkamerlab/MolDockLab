@@ -29,7 +29,7 @@ from src.preprocessing import (
 from src.interaction_analysis import (
     split_sdf_path, 
     actives_extraction, 
-    plipify_fp_interaction, 
+    plip_fp_interaction,
     aggregate_interactions, 
     )
 
@@ -83,7 +83,14 @@ def valid_file_path(path):
         return path
     else:
         raise ArgumentTypeError(f"'{path}' is not a valid file.")
-    
+
+def valid_dir_path(path):
+    """Check if the provided path is a valid directory and return it as an absolute path."""
+    if os.path.isdir(path):
+        return Path(path).resolve()
+    else:
+        raise ArgumentTypeError(f"'{path}' is not a valid directory.")
+
 def get_parser():
     parser = ArgumentParser(description="MolDockLab Workflow Argument Parser")
     # Required arguments
@@ -91,6 +98,7 @@ def get_parser():
     parser.add_argument('--ref_ligand_path', type=valid_file_path, required=True, help='Path to the reference ligand file')
     parser.add_argument('--known_ligands_path', type=valid_file_path, required=True, help='Path to the experimentally validated ligands library. Known ligand library has to include the true value column and the activity class column')
     parser.add_argument('--true_value_col', type=str, required=True, help='The column name of the true value in the ligands library')
+    parser.add_argument('--software_path', type=valid_dir_path, required=True, help='Path to the directory containing the third-party software (gnina, PLANTS, DiffDock, gypsum_dl, SCORCH, RTMScore, etc.), as installed by setup_py310.sh, e.g. software')
 
     # Optional arguments 
     parser.add_argument('--activity_col', type=str, default='activity_class', help='The column name of the activity class in the ligands library (0 inactive, 1 active)')
@@ -179,9 +187,10 @@ def main(args):
     output_prepared_mols = OUTPUT / f"{Path(args.known_ligands_path).stem}_prepared.sdf"
     try:
         run_gypsumdl(
-            ligand_library = (HERE / args.known_ligands_path), 
-            prepared_library_path=output_prepared_mols, 
-            id_column=args.id_col
+            ligand_library = (HERE / args.known_ligands_path),
+            prepared_library_path=output_prepared_mols,
+            id_column=args.id_col,
+            software_path=args.software_path
             )
         logger.info(f"✅ Experimentally validated ligands library is prepared at {output_prepared_mols}")
     except Exception as e:
@@ -202,6 +211,7 @@ def main(args):
                 exhaustiveness=args.exhaustiveness,
                 n_poses=args.n_poses,
                 OUTPUT=OUTPUT,
+                software_path=args.software_path,
                 local_diffdock=args.local_diffdock,
                 )
         logger.info(f"✅ Docking results of experimentally validated molecules are saved at {OUTPUT / 'allposes.sdf'}")
@@ -225,9 +235,10 @@ def main(args):
         rescoring_function(
             rescoring_programs=args.rescoring, 
             protein_path=HERE / args.protein_path,
-            docked_library_path=OUTPUT / 'allposes.sdf', 
+            docked_library_path=OUTPUT / 'allposes.sdf',
             ref_file=HERE / args.ref_ligand_path,
             ncpu=n_cpu,
+            software_path=args.software_path,
             )
         logger.info(f"✅ Rescoring results are saved at {OUTPUT / 'rescoring_results' / 'all_rescoring_results.csv'}")
     except Exception as e:
@@ -322,9 +333,10 @@ def main(args):
     output_prepared_mols = OUTPUT / f"{Path(args.sbvs_ligands_path).stem}_prepared.sdf"
     try:
         run_gypsumdl(
-            ligand_library = (HERE / args.sbvs_ligands_path), 
-            prepared_library_path=output_prepared_mols, 
-            id_column=args.id_col
+            ligand_library = (HERE / args.sbvs_ligands_path),
+            prepared_library_path=output_prepared_mols,
+            id_column=args.id_col,
+            software_path=args.software_path
             )
         logger.info(f"✅ Larger ligands library is prepared at {output_prepared_mols}")
     except Exception as e:
@@ -343,6 +355,7 @@ def main(args):
                     exhaustiveness=args.exhaustiveness,
                     n_poses=args.n_poses,
                     OUTPUT=larger_data_output,
+                    software_path=args.software_path,
                     local_diffdock=args.local_diffdock,
                     )
         logger.info(f"✅ Docking results are saved at {larger_data_output / 'allposes.sdf'}")
@@ -355,9 +368,10 @@ def main(args):
         rescoring_function(
             rescoring_programs=selected_sfs, 
             protein_path=HERE / args.protein_path,
-            docked_library_path=larger_data_output / 'allposes.sdf', 
+            docked_library_path=larger_data_output / 'allposes.sdf',
             ref_file=HERE / args.ref_ligand_path,
             ncpu=n_cpu,
+            software_path=args.software_path,
             )
         logger.info(f"✅ Rescoring results are saved at {larger_data_output / 'rescoring_results' / 'all_rescoring_results.csv'}")
     except Exception as e:
@@ -365,12 +379,12 @@ def main(args):
         return
 
     logger.info(f"🔷 Ranking unknown poses using {selected_ranking_method} ...")
+    # keyed by function __name__, which is both what ranking.py persists in the
+    # 'ranking_method' column and the score column each function returns
     ranking_methods_dict = {
-        'ecr' : exponential_consensus_ranking,
-        'rank_by_rank' : rank_by_rank,
-        'zscore': Zscore
+        f.__name__: f for f in (exponential_consensus_ranking, rank_by_rank, Zscore)
         }
-    
+
     try:
         rescored_df_sbvs = pd.read_csv(larger_data_output / 'rescoring_results' / 'all_rescoring_results.csv')
         rescored_df_sbvs_norm = norm_scores(rescored_df_sbvs)
@@ -408,7 +422,7 @@ def main(args):
                 mols_interx_fp = pd.read_csv(interx_csv)
                 logger.info(f"✅ Protein-ligand interactions are already saved at {interx_csv}")
             else:
-                mols_interx_fp = plipify_fp_interaction(
+                mols_interx_fp = plip_fp_interaction(
                     ligands_path=actives_paths, 
                     protein_path=HERE / args.protein_path,
                     output_file=OUTPUT / f'{protein_name}_interactions.png'
@@ -445,15 +459,15 @@ def main(args):
             logger.info(f"✅ Selected ligands with specific interactions are already saved at {selected_ligands_interx}")
         else:
             logger.info("🔷 Performing PLIP interaction analysis for the larger library ...")
-            if not interactions_dict_path.is_file():
+            if interactions_dict_path.is_file():
+                allposes_interaction_fp = pd.read_csv(interactions_dict_path, index_col=0)
+            else:
                 ligands_paths = split_sdf_path(larger_data_output / 'allposes.sdf')
-                allposes_interaction_fp = plipify_fp_interaction(
-                                    sdfs_path=ligands_paths, 
-                                    protein_file=args.protein_path,
-                                    output_dir=interactions_dict_path
+                allposes_interaction_fp = plip_fp_interaction(
+                                    ligands_path=ligands_paths,
+                                    protein_path=args.protein_path,
+                                    output_file=interactions_dict_path
                                     )
-                allposes_interaction_fp.to_csv(larger_data_output / 'allposes_interaction_fps.csv', index=False)
-                logger.info(f"✅ PLIP interactions are saved at {larger_data_output / 'allposes_interaction_fps.csv'}")
 
                 # Clean up split SDF directory after virtual screening interaction analysis
                 if ligands_paths:
@@ -464,12 +478,24 @@ def main(args):
                             logger.info(f"🧹 Cleaned up virtual screening split SDF directory: {split_dir}")
                     except OSError as e:
                         logger.warning(f"Could not remove split directory {split_dir}: {e}")
-            allposes_fp_interx = pd.read_csv(larger_data_output / 'allposes_interaction_fps.csv')
-            # filtering the compounds with key interactions at any pose
+
+            # the pose name is kept in the index, the compound ID is its first field
+            allposes_interaction_fp.index.name = 'pose_ID'
             allposes_interaction_fp['ID'] = [str(idx).split('_')[0] for idx in allposes_interaction_fp.index]
-            filtered_plip_interx = allposes_interaction_fp.groupby('ID')[key_interactions_resno].apply(lambda group: (group != 0).any().any())
-            interactions_df = allposes_fp_interx[allposes_fp_interx['ID'].isin(filtered_plip_interx[filtered_plip_interx].index)]
-            interactions_df.to_csv(larger_data_output / 'selected_ligands_interaction.csv', index=False)
+            allposes_interaction_fp.to_csv(larger_data_output / 'allposes_interaction_fps.csv')
+            logger.info(f"✅ PLIP interactions are saved at {larger_data_output / 'allposes_interaction_fps.csv'}")
+
+            # filtering the compounds with key interactions at any pose
+            available_residues = [res for res in key_interactions_resno if res in allposes_interaction_fp.columns]
+            missing_residues = [res for res in key_interactions_resno if res not in allposes_interaction_fp.columns]
+            if missing_residues:
+                logger.warning(f"⚠️ Key residues not found in the interaction fingerprints: {missing_residues}")
+            if not available_residues:
+                raise KeyError(f"None of the key residues {key_interactions_resno} were detected in the screened poses")
+
+            filtered_plip_interx = allposes_interaction_fp.groupby('ID')[available_residues].apply(lambda group: (group != 0).any().any())
+            interactions_df = allposes_interaction_fp[allposes_interaction_fp['ID'].isin(filtered_plip_interx[filtered_plip_interx].index)]
+            interactions_df.to_csv(larger_data_output / 'selected_ligands_interaction.csv')
         
         logger.info(f"✅ Selected ligands with specific interactions are saved at {larger_data_output / 'selected_ligands_interaction.csv'}")
     except Exception as e:
@@ -481,7 +507,9 @@ def main(args):
         ranked_ligands = pd.read_csv(larger_data_output / 'ranked_ligands.csv')
         selected_ligands = pd.read_csv(larger_data_output / 'selected_ligands_interaction.csv')
         selected_ligands['passed_interx_filtration'] = 1
-        merged_df = pd.merge(ranked_ligands, selected_ligands[['ID', 'passed_interx_filtration']], how='left').fillna(0)
+        # one row per pose in the interaction table, keep a single flag per compound
+        selected_ligands = selected_ligands[['ID', 'passed_interx_filtration']].drop_duplicates(subset='ID')
+        merged_df = pd.merge(ranked_ligands, selected_ligands, on='ID', how='left').fillna(0)
         merged_df.to_csv(larger_data_output / 'ranked_selected_interx_ligands.csv', index=False)
         logger.info(f"✅ All ligands are saved at {larger_data_output / 'ranked_selected_interx_ligands.csv'}")
     except Exception as e:

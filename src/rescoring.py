@@ -36,6 +36,7 @@ def rescoring_function(
         docked_library_path (Path): The path to the docked library
         ref_file (Path): The path to the reference ligand file
         ncpu (int): The number of CPUs to use
+        software_path (Path): The path to the directory where the third-party software is installed
     Returns:
         Saved rescoring results in the rescoring_results folder as csv file, besides the individual rescoring results in the rescoring_results folder
     """
@@ -87,7 +88,7 @@ def rescoring_function(
             # calculate the run time for each program
             start_time = time.time()
             if program == 'scorch':
-                os.chdir(str((ref_file.parent).parent / 'software/SCORCH'))
+                os.chdir(str(software_path / 'SCORCH'))
             else:
                 os.chdir(str((ref_file.parent).parent))
             with ProcessPoolExecutor(max_workers=num_cpus) as executor:
@@ -394,7 +395,7 @@ def _rtmscore_rescoring(
             f' -o {str(output_path.parent / f"rtmscore_{number_of_ligand}")}'
             f' -gen_pocket'
             f' -c 10.0'
-            ' -m software/RTMScore/trained_models/rtmscore_model1.pth'
+            f' -m {str(software_path)}/RTMScore/trained_models/rtmscore_model1.pth'
         )
     return (
         f'python {str(software_path)}/RTMScore/example/rtmscore.py'

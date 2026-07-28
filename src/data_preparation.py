@@ -46,8 +46,10 @@ def _minimize_and_select_most_stable(row: pd.Series, numConfs: int = 10) -> pd.D
 
 
 def run_gypsumdl(
-        ligand_library: Path, 
-        prepared_library_path: Path, 
+        ligand_library: Path,
+        prepared_library_path: Path,
+        *,
+        software_path: Path,
         id_column : str ='ID'
         ) -> Path:
     """
@@ -55,13 +57,14 @@ def run_gypsumdl(
     Args:
         ligand_library: Path to ligand's library
         prepared_library_path: Path to prepared library
+        software_path: Path to the directory where the third-party software is installed
         id_column: Column name of the ID in the library
-    Return: 
+    Return:
         Path to output file
     """
     ncpus = multiprocessing.cpu_count() - 1
     gypsum_dl_command = (
-        'python software/gypsum_dl-1.2.1/run_gypsum_dl.py'
+        f'python {str(software_path)}/gypsum_dl-1.2.1/run_gypsum_dl.py'
         f' -s {ligand_library}'
         f' -o {prepared_library_path.parent}'
         ' --job_manager multiprocessing'

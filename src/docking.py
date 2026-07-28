@@ -26,6 +26,8 @@ def docking(
     exhaustiveness : int,
     n_poses : int,
     OUTPUT : Path,
+    *,
+    software_path : Path,
     id_column : str = 'ID',
     time_calc : bool =False,
     local_diffdock : bool =False
@@ -41,6 +43,7 @@ def docking(
         exhaustiveness (int): level of exhaustiveness for the docking search
         n_poses (int): number of poses to be generated
         OUTPUT (Path): path to the output directory
+        software_path (Path): path to the directory where the docking software is installed
         id_column (str): name of the column containing the IDs of the ligands
         time_calc (bool): whether to calculate the time taken for the docking
         local_diffdock (bool): whether to use local DiffDock
@@ -75,6 +78,7 @@ def docking(
             ref_file=ref_file,
             exhaustiveness=exhaustiveness,
             n_poses=n_poses,
+            software_path=software_path,
             local_diffdock=local_diffdock
         )
 
@@ -118,6 +122,7 @@ def _gnina_docking(
         ref_file : Path,
         exhaustiveness : int,
         n_poses : int,
+        software_path : Path,
         local_diffdock : bool
 ):
     '''
@@ -130,10 +135,11 @@ def _gnina_docking(
         ref_file (Path): path to the reference ligand file in SDF format
         exhaustiveness (int): level of exhaustiveness for the docking search, ranges from 0-8
         n_poses (int): number of poses to be generated
+        software_path (Path): path to the directory where the docking software is installed
         local_diffdock (bool): whether to use local DiffDock
     '''
     gnina_cmd = (
-        f'./software/gnina -r {protein_file}'
+        f'{str(software_path)}/gnina -r {protein_file}'
         f' -l {ligands_path}'
         f' -o {sdf_output}'
         f' --autobox_ligand {str(ref_file)}'
@@ -190,10 +196,11 @@ def _smina_docking(
         ref_file : Path,
         exhaustiveness : int,
         n_poses : int,
+        software_path : Path,
         local_diffdock : bool
 ):
     '''
-    Perform docking using the SMINA software on a protein and a reference ligand. 
+    Perform docking using the SMINA software on a protein and a reference ligand.
     Docked poses are saved in SDF format.
 
     Args:
@@ -203,10 +210,11 @@ def _smina_docking(
         ref_file (Path): path to the reference ligand file in SDF format
         exhaustiveness (int): level of exhaustiveness for the docking search, ranges from 0-8
         n_poses (int): number of poses to be generated
+        software_path (Path): path to the directory where the docking software is installed
         local_diffdock (bool): whether to use local DiffDock
     '''
     smina_cmd = (
-        f'./software/gnina -r {protein_file}'
+        f'{str(software_path)}/gnina -r {protein_file}'
         f' -l {ligands_path} -o {sdf_output}'
         f' --autobox_ligand {str(ref_file)}'
         ' --autobox_extend=1 --seed 42'
@@ -260,10 +268,11 @@ def _plants_docking(
         ref_file : Path,
         exhaustiveness : int,
         n_poses : int,
+        software_path : Path,
         local_diffdock : bool
 ):
     '''
-    Perform docking using the PLANTS software on a protein and a reference ligand. 
+    Perform docking using the PLANTS software on a protein and a reference ligand.
     Docked poses are saved in SDF format.
 
     Args:
@@ -273,6 +282,7 @@ def _plants_docking(
         ref_file (Path): path to the reference ligand file in SDF format
         exhaustiveness (int): level of exhaustiveness for the docking search, ranges from 0-8
         n_poses (int): number of poses to be generated
+        software_path (Path): path to the directory where the docking software is installed
         local_diffdock (bool): whether to use local DiffDock
     '''
     # convert to structure, ligands, reference ligand to mol2
@@ -285,7 +295,7 @@ def _plants_docking(
     center_x, center_y, center_z, radius = pocket_coordinates_generation(
         protein_mol2,
         ref_ligand_mol2,
-        software_path=Path('software'),
+        software_path=software_path,
         pocket_coordinates_path='bindingsite.def'
         )
     # print(f"Center of the pocket is: {center_x}, {center_y}, {center_z} with radius of {radius}")
@@ -336,7 +346,7 @@ def _plants_docking(
         configwriter.writelines(plants_config)
     # Run PLANTS docking
 
-    plants_docking_command = f'software/PLANTS --mode screen {str(plants_docking_config_path)}'
+    plants_docking_command = f'{str(software_path)}/PLANTS --mode screen {str(plants_docking_config_path)}'
 
     if sdf_output.name not in os.listdir(sdf_output.parent):
         start_time = time.time()
@@ -397,9 +407,10 @@ def _diffdock_docking(
         ref_file : Path,
         exhaustiveness : int,
         n_poses : int,
+        software_path : Path,
         local_diffdock : bool = False
 ):
-    
+
     '''
     Perform docking using the DiffDock software or Local DiffDock on a protein and a reference ligand. Docked poses are saved in SDF format.
 
@@ -410,6 +421,7 @@ def _diffdock_docking(
         ref_file (Path): path to the reference ligand file in SDF format
         exhaustiveness (int): level of exhaustiveness for the docking search, ranges from 0-8
         n_poses (int): number of poses to be generated
+        software_path (Path): path to the directory where the docking software is installed
         local_diffdock (bool): whether to use local DiffDock
     '''
 
@@ -453,13 +465,16 @@ def _diffdock_docking(
             print(f"Compound {id} is already docked with DiffDock")
             continue
 
-        os.chdir(os.getcwd() + '/software/DiffDock')
-        #start_time = time.time()
-        run_command(diffdock_cmd)
-        #end_time = time.time()
-        #duration = end_time - start_time
-        #print(f"\n\nThe diffdock took {duration} seconds to run.")
-        os.chdir(os.path.join(os.getcwd(), '..', '..'))
+        original_cwd = Path.cwd()
+        try:
+            os.chdir(str(software_path / 'DiffDock'))
+            #start_time = time.time()
+            run_command(diffdock_cmd)
+            #end_time = time.time()
+            #duration = end_time - start_time
+            #print(f"\n\nThe diffdock took {duration} seconds to run.")
+        finally:
+            os.chdir(str(original_cwd))
 
     if (sdf_output / 'diffdock_poses.sdf').exists():
         return
@@ -535,10 +550,11 @@ def _flexx_docking(
         ref_file : Path,
         exhaustiveness : int,
         n_poses : int,
+        software_path : Path,
         local_diffdock : bool
 ):
     '''
-    Perform docking using the FlexX software on a protein and a reference ligand. 
+    Perform docking using the FlexX software on a protein and a reference ligand.
     Docked poses are saved in SDF format.
 
     Args:
@@ -548,6 +564,7 @@ def _flexx_docking(
         ref_file (Path): path to the reference ligand file in SDF format
         exhaustiveness (int): level of exhaustiveness for the docking search, ranges from 0-8
         n_poses (int): number of poses to be generated
+        software_path (Path): path to the directory where the docking software is installed
         local_diffdock (bool): whether to use local DiffDock
     '''
 
@@ -561,7 +578,7 @@ def _flexx_docking(
         print(f"Reference ligand is already in SDF format")
 
     flexx_cmd = (
-        f"./software/flexx-6.0.0/flexx"
+        f"{str(software_path)}/flexx-6.0.0/flexx"
         f" --thread-count 8"
         f" -p {str(protein_file)}"
         f" --r {str(ref_file_sdf)}"
